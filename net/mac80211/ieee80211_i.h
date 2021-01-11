@@ -1500,6 +1500,7 @@ struct ieee80211_local {
 		struct dentry *keys;
 	} debugfs;
 	bool force_tx_status;
+	int is_dead;
 #endif
 
 	/*
