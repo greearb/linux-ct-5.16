@@ -209,6 +209,7 @@ struct mt7915_phy {
 	struct thermal_cooling_device *cdev;
 	u8 throttle_state;
 	u32 throttle_temp[2]; /* 0: critical high, 1: maximum */
+	u8 is_monitor_mode; /* are we in monitor mode or not ? */
 
 	u32 rxfilter;
 	u64 omac_mask;
@@ -261,6 +262,10 @@ struct mt7915_dev {
 	 * creation by firmware, so may be a performance drag.
 	 */
 	bool txs_for_no_skb_enabled;
+	/* Should we enable group-5 rx descriptor logic?  This may decrease RX
+	 * throughput, but will give per skb rx rate information..
+	 */
+	bool rx_group_5_enable;
 
 	struct work_struct init_work;
 	struct work_struct rc_work;

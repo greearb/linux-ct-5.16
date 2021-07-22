@@ -722,7 +722,8 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 		status->flag |= RX_FLAG_8023;
 	}
 
-	if (rxv && status->flag & RX_FLAG_RADIOTAP_HE) {
+	if (phy->is_monitor_mode &&
+	    rxv && status->flag & RX_FLAG_RADIOTAP_HE) {
 		mt7915_mac_decode_he_radiotap(skb, status, rxv, mode);
 		if (status->flag & RX_FLAG_RADIOTAP_HE_MU)
 			mt7915_mac_decode_he_mu_radiotap(skb, status, rxv);
