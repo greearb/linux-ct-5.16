@@ -567,6 +567,7 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 	/* RXD Group 3 - P-RXV */
 	if (rxd1 & MT_RXD1_NORMAL_GROUP_3) {
 		u32 v0, v1, v2;
+		u8 nss;
 
 		rxv = rxd; /* DW16 assuming group 1,2,3,4 */
 		rxd += 2;
@@ -584,21 +585,12 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 		/* TODO:  When group-5 is enabled, use nss (and stbc) to
 		 * calculate chains properly for this particular skb.
 		 */
-		status->chains = mphy->antenna_mask;
 		status->chain_signal[0] = to_rssi(MT_PRXV_RCPI0, v1);
 		status->chain_signal[1] = to_rssi(MT_PRXV_RCPI1, v1);
 		status->chain_signal[2] = to_rssi(MT_PRXV_RCPI2, v1);
 		status->chain_signal[3] = to_rssi(MT_PRXV_RCPI3, v1);
-		status->signal = status->chain_signal[0];
 
-		for (i = 1; i < hweight8(mphy->antenna_mask); i++) {
-			if (!(status->chains & BIT(i)))
-				continue;
-
-			/* TODO:  Use db sum logic instead of max. */
-			status->signal = max(status->signal,
-					     status->chain_signal[i]);
-		}
+		nss = hweight8(mphy->antenna_mask);
 
 		/* RXD Group 5 - C-RXV.
 		 * Group 5 Not currently enabled for 7915 except in
@@ -611,6 +603,7 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 			u8 gi = FIELD_GET(MT_CRXV_HT_SHORT_GI, v2);
 			bool cck = false;
 
+			nss = 1;
 			rxd += 18;
 			if ((u8 *)rxd - skb->data >= skb->len)
 				return -EINVAL;
@@ -630,6 +623,7 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 				status->encoding = RX_ENC_HT;
 				if (i > 31)
 					return -EINVAL;
+				nss = i / 8 + 1;
 				break;
 			case MT_PHY_TYPE_VHT:
 				status->nss =
@@ -637,6 +631,7 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 				status->encoding = RX_ENC_VHT;
 				if (i > 9)
 					return -EINVAL;
+				nss = status->nss;
 				break;
 			case MT_PHY_TYPE_HE_MU:
 				status->flag |= RX_FLAG_RADIOTAP_HE_MU;
@@ -646,6 +641,7 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 			case MT_PHY_TYPE_HE_TB:
 				status->nss =
 					FIELD_GET(MT_PRXV_NSTS, v0) + 1;
+				nss = status->nss;
 				status->encoding = RX_ENC_HE;
 				status->flag |= RX_FLAG_RADIOTAP_HE;
 				i &= GENMASK(3, 0);
@@ -659,6 +655,11 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 				return -EINVAL;
 			}
 			status->rate_idx = i;
+
+			if (stbc) {
+				nss *= 2;
+				WARN_ON_ONCE(nss > 4);
+			}
 
 			switch (FIELD_GET(MT_CRXV_FRAME_MODE, v2)) {
 			case IEEE80211_STA_RX_BW_20:
@@ -686,6 +687,17 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 			status->enc_flags |= RX_ENC_FLAG_STBC_MASK * stbc;
 			if (mode < MT_PHY_TYPE_HE_SU && gi)
 				status->enc_flags |= RX_ENC_FLAG_SHORT_GI;
+		}
+
+		status->chains = 1;
+		status->signal = status->chain_signal[0];
+
+		for (i = 1; i < nss; i++) {
+			status->chains |= BIT(i);
+
+			/* TODO:  Use db sum logic instead of max. */
+			status->signal = max(status->signal,
+					     status->chain_signal[i]);
 		}
 	}
 
