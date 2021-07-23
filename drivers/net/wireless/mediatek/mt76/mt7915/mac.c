@@ -425,8 +425,11 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 	__le16 fc = 0;
 	int i, idx;
 	struct mt76_sta_stats *stats = NULL;
+	struct mib_stats *mib = &phy->mib;
 
 	memset(status, 0, sizeof(*status));
+
+	mib->rx_d_skb++;
 
 	if (rxd1 & MT_RXD1_NORMAL_BAND_IDX) {
 		mphy = dev->mt76.phy2;
@@ -440,8 +443,10 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 	if (!test_bit(MT76_STATE_RUNNING, &mphy->state))
 		return -EINVAL;
 
-	if (rxd2 & MT_RXD2_NORMAL_AMSDU_ERR)
+	if (rxd2 & MT_RXD2_NORMAL_AMSDU_ERR) {
+		mib->rx_d_rxd2_amsdu_err++;
 		return -EINVAL;
+	}
 
 	hdr_trans = rxd2 & MT_RXD2_NORMAL_HDR_TRANS;
 	if (hdr_trans && (rxd1 & MT_RXD1_NORMAL_CM))
@@ -473,8 +478,10 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 	else
 		sband = &mphy->sband_2g.sband;
 
-	if (!sband->channels)
+	if (!sband->channels) {
+		mib->rx_d_null_channels++;
 		return -EINVAL;
+	}
 
 	if ((rxd0 & csum_mask) == csum_mask)
 		skb->ip_summed = CHECKSUM_UNNECESSARY;
@@ -494,8 +501,10 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 
 	remove_pad = FIELD_GET(MT_RXD2_NORMAL_HDR_OFFSET, rxd2);
 
-	if (rxd2 & MT_RXD2_NORMAL_MAX_LEN_ERROR)
+	if (rxd2 & MT_RXD2_NORMAL_MAX_LEN_ERROR) {
+		mib->rx_d_max_len_err++;
 		return -EINVAL;
+	}
 
 	rxd += 6;
 	if (rxd1 & MT_RXD1_NORMAL_GROUP_4) {
@@ -507,8 +516,10 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 		seq_ctrl = FIELD_GET(MT_RXD8_SEQ_CTRL, v2);
 
 		rxd += 4;
-		if ((u8 *)rxd - skb->data >= skb->len)
+		if ((u8 *)rxd - skb->data >= skb->len) {
+			mib->rx_d_too_short++;
 			return -EINVAL;
+		}
 	}
 
 	if (rxd1 & MT_RXD1_NORMAL_GROUP_1) {
@@ -539,8 +550,10 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 			}
 		}
 		rxd += 4;
-		if ((u8 *)rxd - skb->data >= skb->len)
+		if ((u8 *)rxd - skb->data >= skb->len) {
+			mib->rx_d_too_short++;
 			return -EINVAL;
+		}
 	}
 
 	if (rxd1 & MT_RXD1_NORMAL_GROUP_2) {
@@ -562,8 +575,10 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 		}
 
 		rxd += 2;
-		if ((u8 *)rxd - skb->data >= skb->len)
+		if ((u8 *)rxd - skb->data >= skb->len) {
+			mib->rx_d_too_short++;
 			return -EINVAL;
+		}
 	}
 
 	/* RXD Group 3 - P-RXV */
@@ -573,8 +588,10 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 
 		rxv = rxd; /* DW16 assuming group 1,2,3,4 */
 		rxd += 2;
-		if ((u8 *)rxd - skb->data >= skb->len)
+		if ((u8 *)rxd - skb->data >= skb->len) {
+			mib->rx_d_too_short++;
 			return -EINVAL;
+		}
 
 		v0 = le32_to_cpu(rxv[0]);  /* DW16, P-VEC1 31:0 */
 		/* DW17, RX_RCPI copied over P-VEC 64:32 Per RX Format doc. */
@@ -607,8 +624,10 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 
 			nss = 1;
 			rxd += 18;
-			if ((u8 *)rxd - skb->data >= skb->len)
+			if ((u8 *)rxd - skb->data >= skb->len) {
+				mib->rx_d_too_short++;
 				return -EINVAL;
+			}
 
 			idx = i = FIELD_GET(MT_PRXV_TX_RATE, v0);
 			mode = FIELD_GET(MT_CRXV_TX_MODE, v2);
@@ -623,16 +642,20 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 			case MT_PHY_TYPE_HT_GF:
 			case MT_PHY_TYPE_HT:
 				status->encoding = RX_ENC_HT;
-				if (i > 31)
+				if (i > 31) {
+					mib->rx_d_bad_ht_rix++;
 					return -EINVAL;
+				}
 				nss = i / 8 + 1;
 				break;
 			case MT_PHY_TYPE_VHT:
 				status->nss =
 					FIELD_GET(MT_PRXV_NSTS, v0) + 1;
 				status->encoding = RX_ENC_VHT;
-				if (i > 9)
+				if (i > 9) {
+					mib->rx_d_bad_vht_rix++;
 					return -EINVAL;
+				}
 				nss = status->nss;
 				break;
 			case MT_PHY_TYPE_HE_MU:
@@ -654,6 +677,7 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 				status->he_dcm = !!(idx & MT_PRXV_TX_DCM);
 				break;
 			default:
+				mib->rx_d_bad_mode++;
 				return -EINVAL;
 			}
 			status->rate_idx = i;
@@ -704,6 +728,7 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 				status->bw = RATE_INFO_BW_160;
 				break;
 			default:
+				mib->rx_d_bad_bw++;
 				return -EINVAL;
 			}
 
