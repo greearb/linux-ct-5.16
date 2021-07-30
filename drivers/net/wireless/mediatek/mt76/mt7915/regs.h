@@ -262,6 +262,29 @@
 
 /* 36, 37 both DNR */
 
+#define MT_MIB_SDR38(_band)		MT_WF_MIB(_band, 0x0d0)
+#define MT_MIB_CTRL_TX_CNT		GENMASK(23, 0)
+
+#define MT_MIB_SDR39(_band)		MT_WF_MIB(_band, 0x0d4)
+#define MT_MIB_MGT_RETRY_CNT		GENMASK(23, 0)
+
+#define MT_MIB_SDR40(_band)		MT_WF_MIB(_band, 0x0d8)
+#define MT_MIB_DATA_RETRY_CNT		GENMASK(23, 0)
+
+#define MT_MIB_SDR42(_band)		MT_WF_MIB(_band, 0x0e0)
+#define MT_MIB_RX_PARTIAL_BEACON_BSSID0	GENMASK(15, 0)
+#define MT_MIB_RX_PARTIAL_BEACON_BSSID1	GENMASK(31, 16)
+
+#define MT_MIB_SDR43(_band)		MT_WF_MIB(_band, 0x0e4)
+#define MT_MIB_RX_PARTIAL_BEACON_BSSID2	GENMASK(15, 0)
+#define MT_MIB_RX_PARTIAL_BEACON_BSSID3	GENMASK(31, 16)
+
+/* This counter shall increment when  PPDUs dropped by the oppo_ps_rx_dis
+ * mechanism
+ */
+#define MT_MIB_SDR46(_band)		MT_WF_MIB(_band, 0x0f0)
+#define MT_MIB_OPPO_PS_RX_DIS_DROP_COUNT GENMASK(15, 0)
+
 #define MT_MIB_DR8(_band)		MT_WF_MIB(_band, 0x0c0)
 #define MT_MIB_DR9(_band)		MT_WF_MIB(_band, 0x0c4)
 #define MT_MIB_DR11(_band)		MT_WF_MIB(_band, 0x0cc)
@@ -278,6 +301,23 @@
 #define MT_TX_AGG_CNT2(_band, n)	MT_WF_MIB(_band, 0x164 + ((n) << 2))
 #define MT_MIB_ARNG(_band, n)		MT_WF_MIB(_band, 0x4b8 + ((n) << 2))
 #define MT_MIB_ARNCR_RANGE(val, n)	(((val) >> ((n) << 3)) & GENMASK(7, 0))
+
+/* drop due to retries being exhausted */
+#define MT_MIB_M0DROPSR00(_band)	MT_WF_MIB(_band, 0x190)
+#define MT_MIB_RTS_RETRY_FAIL_DROP_MASK	GENMASK(15, 0)
+#define MT_MIB_MPDU_RETRY_FAIL_DROP_MASK GENMASK(31, 16)
+
+/* life time out limit */
+#define MT_MIB_M0DROPSR01(_band)	MT_WF_MIB(_band, 0x194)
+#define MT_MIB_LTO_FAIL_DROP_MASK	GENMASK(15, 0)
+
+/* increment when using double number of spatial streams */
+#define MT_MIB_SDR50(_band)		MT_WF_MIB(_band, 0x1dc)
+#define MT_MIB_DBNSS_CNT_DROP_MASK	GENMASK(15, 0)
+
+/* NOTE:  Would need to poll this quickly since it is 16-bit */
+#define MT_MIB_SDR51(_band)		MT_WF_MIB(_band, 0x1e0)
+#define MT_MIB_RX_FCS_OK_MASK		GENMASK(15, 0)
 
 #define MT_WTBLON_TOP_BASE		0x34000
 #define MT_WTBLON_TOP(ofs)		(MT_WTBLON_TOP_BASE + (ofs))
