@@ -196,7 +196,6 @@ void mt7615_mac_set_timing(struct mt7615_phy *phy)
 	else
 		mt76_clear(dev, MT_ARB_SCR,
 			   MT_ARB_SCR_TX0_DISABLE | MT_ARB_SCR_RX0_DISABLE);
-
 }
 
 static void
@@ -1110,7 +1109,7 @@ void mt7615_mac_set_rates(struct mt7615_phy *phy, struct mt7615_sta *sta,
 	mt76_wr(dev, addr + 27 * 4, w27);
 
 	idx = idx > HW_BSSID_MAX ? HW_BSSID_0 : idx;
-	addr = idx > 1 ? MT_LPON_TCR2(idx): MT_LPON_TCR0(idx);
+	addr = idx > 1 ? MT_LPON_TCR2(idx) : MT_LPON_TCR0(idx);
 
 	mt76_rmw(dev, addr, MT_LPON_TCR_MODE, MT_LPON_TCR_READ); /* TSF read */
 	sta->rate_set_tsf = mt76_rr(dev, MT_LPON_UTTR0) & ~BIT(0);
