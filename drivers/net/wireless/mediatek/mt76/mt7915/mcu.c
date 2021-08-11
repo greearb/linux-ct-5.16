@@ -737,6 +737,8 @@ mt7915_mcu_bss_basic_tlv(struct sk_buff *skb, struct ieee80211_vif *vif,
 		memcpy(bss->bssid, phy->mt76->macaddr, ETH_ALEN);
 	}
 
+	memcpy(&mvif->last_mcu.bss_info_basic, bss, sizeof(*bss));
+
 	return 0;
 }
 

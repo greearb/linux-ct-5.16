@@ -921,11 +921,62 @@ mt7915_queues_show(struct seq_file *s, void *data)
 
 DEFINE_SHOW_ATTRIBUTE(mt7915_queues);
 
+static int
+mt7915_mcu_settings_show(struct seq_file *file, void *data)
+{
+	struct ieee80211_sta *sta = file->private;
+	struct mt7915_sta *msta = (struct mt7915_sta *)sta->drv_priv;
+	struct mt7915_vif *mvif = msta->vif;
+
+	/* Last-applied settings to MCU */
+	seq_puts(file, "MCU Settings:\n");
+	seq_puts(file, " VIF Settings:\n");
+
+#define MCU_LE32(a)						\
+	seq_printf(file,					\
+		   "\t" #a ":\t%d\n",				\
+		   le32_to_cpu(mvif->last_mcu.a))		\
+
+#define MCU_LE16(a)						\
+	seq_printf(file,					\
+		   "\t" #a ":\t%d\n",				\
+		   le16_to_cpu(mvif->last_mcu.a))		\
+
+#define MCU_MAC(a)						\
+	seq_printf(file,					\
+		   "\t" #a ":\t%pM\n",				\
+		   mvif->last_mcu.a)				\
+
+#define MCU_U8(a)						\
+	seq_printf(file,					\
+		   "\t" #a ":\t%d\n",				\
+		   (unsigned int)(mvif->last_mcu.a))		\
+
+	MCU_LE32(bss_info_basic.network_type);
+	MCU_U8(bss_info_basic.active);
+	MCU_U8(bss_info_basic.rsv0);
+	MCU_LE16(bss_info_basic.bcn_interval);
+	MCU_MAC(bss_info_basic.bssid);
+	MCU_U8(bss_info_basic.wmm_idx);
+	MCU_U8(bss_info_basic.dtim_period);
+	MCU_U8(bss_info_basic.bmc_wcid_lo);
+	MCU_U8(bss_info_basic.cipher);
+	MCU_U8(bss_info_basic.phy_mode);
+	MCU_U8(bss_info_basic.max_bssid);
+	MCU_U8(bss_info_basic.non_tx_bssid);
+	MCU_U8(bss_info_basic.bmc_wcid_hi);
+
+	return 0;
+}
+
+DEFINE_SHOW_ATTRIBUTE(mt7915_mcu_settings);
+
 void mt7915_sta_add_debugfs(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 			    struct ieee80211_sta *sta, struct dentry *dir)
 {
 	debugfs_create_file("fixed_rate", 0600, dir, sta, &fops_fixed_rate);
 	debugfs_create_file("hw-queues", 0400, dir, sta, &mt7915_queues_fops);
+	debugfs_create_file("mcu_settings", 0400, dir, sta, &mt7915_mcu_settings_fops);
 }
 
 #endif

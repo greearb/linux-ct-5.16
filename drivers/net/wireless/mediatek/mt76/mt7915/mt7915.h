@@ -8,6 +8,7 @@
 #include <linux/ktime.h>
 #include "../mt76.h"
 #include "regs.h"
+#include "mcu.h"
 
 #define MT7915_MAX_INTERFACES		19
 #define MT7915_MAX_WMM_SETS		4
@@ -122,6 +123,10 @@ struct mt7915_vif_cap {
 	bool he_mu_ebfer:1;
 };
 
+struct mt7915_vif_last_mcu {
+	struct bss_info_basic bss_info_basic;
+};
+
 struct mt7915_vif {
 	u16 idx;
 	u8 omac_idx;
@@ -134,6 +139,8 @@ struct mt7915_vif {
 
 	struct ieee80211_tx_queue_params queue_params[IEEE80211_NUM_ACS];
 	struct cfg80211_bitrate_mask bitrate_mask;
+
+	struct mt7915_vif_last_mcu last_mcu;
 };
 
 /* per-phy stats.  */
