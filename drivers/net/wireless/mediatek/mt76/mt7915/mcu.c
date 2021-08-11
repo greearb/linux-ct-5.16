@@ -1669,11 +1669,13 @@ mt7915_mcu_wtbl_smps_tlv(struct sk_buff *skb, struct ieee80211_sta *sta,
 {
 	struct wtbl_smps *smps;
 	struct tlv *tlv;
+	struct mt7915_sta *msta = (struct mt7915_sta *)sta->drv_priv;
 
 	tlv = mt7915_mcu_add_nested_tlv(skb, WTBL_SMPS, sizeof(*smps),
 					wtbl_tlv, sta_wtbl);
 	smps = (struct wtbl_smps *)tlv;
 	smps->smps = (sta->smps_mode == IEEE80211_SMPS_DYNAMIC);
+	memcpy(&msta->last_mcu.wtbl_smps, smps, sizeof(*smps));
 }
 
 static void
@@ -1684,6 +1686,7 @@ mt7915_mcu_wtbl_ht_tlv(struct sk_buff *skb, struct ieee80211_vif *vif,
 	struct mt7915_vif *mvif = (struct mt7915_vif *)vif->drv_priv;
 	struct wtbl_ht *ht = NULL;
 	struct tlv *tlv;
+	struct mt7915_sta *msta = (struct mt7915_sta *)sta->drv_priv;
 
 	/* wtbl ht */
 	if (sta->ht_cap.ht_supported) {
@@ -1713,9 +1716,11 @@ mt7915_mcu_wtbl_ht_tlv(struct sk_buff *skb, struct ieee80211_vif *vif,
 			       sta->vht_cap.cap);
 		if (ht)
 			ht->af = max_t(u8, ht->af, af);
+		memcpy(&msta->last_mcu.wtbl_vht, vht, sizeof(*vht));
 	}
 
 	mt7915_mcu_wtbl_smps_tlv(skb, sta, sta_wtbl, wtbl_tlv);
+	memcpy(&msta->last_mcu.wtbl_ht, ht, sizeof(*ht));
 }
 
 static void
@@ -1745,6 +1750,7 @@ mt7915_mcu_wtbl_hdr_trans_tlv(struct sk_buff *skb, struct ieee80211_vif *vif,
 		htr->to_ds = true;
 		htr->from_ds = true;
 	}
+	memcpy(&msta->last_mcu.wtbl_hdr_trans, htr, sizeof(*htr));
 }
 
 static int
@@ -1976,6 +1982,7 @@ static void
 mt7915_mcu_sta_bfer_tlv(struct mt7915_dev *dev, struct sk_buff *skb,
 			struct ieee80211_vif *vif, struct ieee80211_sta *sta)
 {
+	struct mt7915_sta *msta = (struct mt7915_sta *)sta->drv_priv;
 	struct mt7915_vif *mvif = (struct mt7915_vif *)vif->drv_priv;
 	struct mt7915_phy *phy =
 		mvif->band_idx ? mt7915_ext_phy(dev) : &dev->phy;
@@ -2007,8 +2014,10 @@ mt7915_mcu_sta_bfer_tlv(struct mt7915_dev *dev, struct sk_buff *skb,
 		mt7915_mcu_sta_bfer_vht(sta, phy, bf, ebf);
 	else if (sta->ht_cap.ht_supported)
 		mt7915_mcu_sta_bfer_ht(sta, phy, bf);
-	else
+	else {
+		memcpy(&msta->last_mcu.sta_rec_bf, bf, sizeof(*bf));
 		return;
+	}
 
 	bf->bf_cap = ebf ? ebf : dev->ibf << 1;
 	bf->bw = sta->bandwidth;
@@ -2037,12 +2046,14 @@ mt7915_mcu_sta_bfer_tlv(struct mt7915_dev *dev, struct sk_buff *skb,
 	default:
 		break;
 	}
+	memcpy(&msta->last_mcu.sta_rec_bf, bf, sizeof(*bf));
 }
 
 static void
 mt7915_mcu_sta_bfee_tlv(struct mt7915_dev *dev, struct sk_buff *skb,
 			struct ieee80211_vif *vif, struct ieee80211_sta *sta)
 {
+	struct mt7915_sta *msta = (struct mt7915_sta *)sta->drv_priv;
 	struct mt7915_vif *mvif = (struct mt7915_vif *)vif->drv_priv;
 	struct mt7915_phy *phy =
 		mvif->band_idx ? mt7915_ext_phy(dev) : &dev->phy;
@@ -2071,6 +2082,7 @@ mt7915_mcu_sta_bfee_tlv(struct mt7915_dev *dev, struct sk_buff *skb,
 
 	/* reply with identity matrix to avoid 2x2 BF negative gain */
 	bfee->fb_identity_matrix = (nrow == 1 && tx_ant == 2);
+	memcpy(&msta->last_mcu.sta_rec_bfee, bfee, sizeof(*bfee));
 }
 
 static enum mcu_mmps_mode
@@ -2252,6 +2264,7 @@ static void
 mt7915_mcu_sta_rate_ctrl_tlv(struct sk_buff *skb, struct mt7915_dev *dev,
 			     struct ieee80211_vif *vif, struct ieee80211_sta *sta)
 {
+	struct mt7915_sta *msta = (struct mt7915_sta *)sta->drv_priv;
 	struct mt7915_vif *mvif = (struct mt7915_vif *)vif->drv_priv;
 	struct cfg80211_chan_def *chandef = &mvif->phy->mt76->chandef;
 	struct cfg80211_bitrate_mask *mask = &mvif->bitrate_mask;
@@ -2343,6 +2356,7 @@ mt7915_mcu_sta_rate_ctrl_tlv(struct sk_buff *skb, struct mt7915_dev *dev,
 	}
 
 	ra->sta_cap = cpu_to_le32(cap);
+	memcpy(&msta->last_mcu.sta_rec_ra, ra, sizeof(*ra));
 }
 
 int mt7915_mcu_add_rate_ctrl(struct mt7915_dev *dev, struct ieee80211_vif *vif,

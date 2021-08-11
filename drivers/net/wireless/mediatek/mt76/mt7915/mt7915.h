@@ -97,6 +97,14 @@ struct mt7915_sta_last_mcu {
 	struct sta_rec_muru sta_rec_muru;
 	struct sta_rec_vht sta_rec_vht;
 	struct sta_rec_amsdu sta_rec_amsdu;
+	struct sta_rec_ht sta_rec_ht;
+	struct wtbl_smps wtbl_smps;
+	struct wtbl_ht wtbl_ht;
+	struct wtbl_vht wtbl_vht;
+	struct wtbl_hdr_trans wtbl_hdr_trans;
+	struct sta_rec_bf sta_rec_bf;
+	struct sta_rec_bfee sta_rec_bfee;
+	struct sta_rec_ra sta_rec_ra;
 };
 
 struct mt7915_sta {

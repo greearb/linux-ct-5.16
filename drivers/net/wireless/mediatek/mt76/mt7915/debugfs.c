@@ -927,6 +927,7 @@ mt7915_mcu_settings_show(struct seq_file *file, void *data)
 	struct ieee80211_sta *sta = file->private;
 	struct mt7915_sta *msta = (struct mt7915_sta *)sta->drv_priv;
 	struct mt7915_vif *mvif = msta->vif;
+	int i;
 
 	/* Last-applied settings to MCU */
 	seq_puts(file, "MCU Settings:\n");
@@ -1159,6 +1160,118 @@ mt7915_mcu_settings_show(struct seq_file *file, void *data)
 	S_MCU_LE32X(sta_rec_vht.vht_cap);
 	S_MCU_LE16X(sta_rec_vht.vht_rx_mcs_map);
 	S_MCU_LE16X(sta_rec_vht.vht_tx_mcs_map);
+
+	seq_puts(file, "\n");
+	S_MCU_U8(sta_rec_amsdu.max_amsdu_num);
+	S_MCU_U8(sta_rec_amsdu.max_mpdu_size);
+	S_MCU_U8(sta_rec_amsdu.amsdu_en);
+
+	seq_puts(file, "\n");
+	S_MCU_LE16X(sta_rec_ht.ht_cap);
+
+	seq_puts(file, "\n");
+	S_MCU_U8(wtbl_smps.smps);
+
+	seq_puts(file, "\n");
+	S_MCU_U8(wtbl_ht.ht);
+	S_MCU_U8(wtbl_ht.ldpc);
+	S_MCU_U8(wtbl_ht.af);
+	S_MCU_U8(wtbl_ht.mm);
+
+	seq_puts(file, "\n");
+	S_MCU_U8(wtbl_vht.ldpc);
+	S_MCU_U8(wtbl_vht.dyn_bw);
+	S_MCU_U8(wtbl_vht.vht);
+	S_MCU_U8(wtbl_vht.txop_ps);
+
+	seq_puts(file, "\n");
+	S_MCU_U8(wtbl_hdr_trans.to_ds);
+	S_MCU_U8(wtbl_hdr_trans.from_ds);
+	S_MCU_U8(wtbl_hdr_trans.no_rx_trans);
+
+	seq_puts(file, "\n");
+	S_MCU_LE16X(sta_rec_bf.pfmu);
+	S_MCU_U8(sta_rec_bf.su_mu);
+	S_MCU_U8(sta_rec_bf.bf_cap);
+	S_MCU_U8(sta_rec_bf.sounding_phy);
+	S_MCU_U8(sta_rec_bf.ndpa_rate);
+	S_MCU_U8(sta_rec_bf.ndp_rate);
+	S_MCU_U8(sta_rec_bf.rept_poll_rate);
+	S_MCU_U8(sta_rec_bf.tx_mode);
+	S_MCU_U8(sta_rec_bf.bf_cap);
+	S_MCU_U8(sta_rec_bf.ncol);
+	S_MCU_U8(sta_rec_bf.nrow);
+	S_MCU_U8(sta_rec_bf.bw);
+	S_MCU_U8(sta_rec_bf.mem_total);
+	S_MCU_U8(sta_rec_bf.mem_20m);
+	for (i = 0; i < 4; i++) {
+		S_MCU_U8(sta_rec_bf.mem[i].row);
+		S_MCU_U8(sta_rec_bf.mem[i].col);
+		S_MCU_U8(sta_rec_bf.mem[i].row_msb);
+	}
+	S_MCU_LE16X(sta_rec_bf.smart_ant);
+	S_MCU_U8(sta_rec_bf.se_idx);
+	S_MCU_U8X(sta_rec_bf.auto_sounding);
+	S_MCU_U8(sta_rec_bf.ibf_timeout);
+	S_MCU_U8(sta_rec_bf.ibf_dbw);
+	S_MCU_U8(sta_rec_bf.ibf_ncol);
+	S_MCU_U8(sta_rec_bf.ibf_nrow);
+	S_MCU_U8(sta_rec_bf.nrow_bw160);
+	S_MCU_U8(sta_rec_bf.ncol_bw160);
+	S_MCU_U8(sta_rec_bf.ru_start_idx);
+	S_MCU_U8(sta_rec_bf.ru_end_idx);
+	S_MCU_U8(sta_rec_bf.trigger_su);
+	S_MCU_U8(sta_rec_bf.trigger_mu);
+	S_MCU_U8(sta_rec_bf.ng16_su);
+	S_MCU_U8(sta_rec_bf.ng16_mu);
+	S_MCU_U8(sta_rec_bf.codebook42_su);
+	S_MCU_U8(sta_rec_bf.codebook75_mu);
+	S_MCU_U8(sta_rec_bf.he_ltf);
+
+	seq_puts(file, "\n");
+	S_MCU_U8(sta_rec_bfee.fb_identity_matrix);
+	S_MCU_U8(sta_rec_bfee.ignore_feedback);
+
+	seq_puts(file, "\n");
+	S_MCU_U8(sta_rec_ra.valid);
+	S_MCU_U8(sta_rec_ra.auto_rate);
+	S_MCU_U8(sta_rec_ra.phy_mode);
+	S_MCU_U8(sta_rec_ra.channel);
+	S_MCU_U8(sta_rec_ra.bw);
+	S_MCU_U8(sta_rec_ra.disable_cck);
+	S_MCU_U8(sta_rec_ra.ht_mcs32);
+	S_MCU_U8(sta_rec_ra.ht_gf);
+	S_MCU_U8(sta_rec_ra.ht_mcs[0]);
+	S_MCU_U8(sta_rec_ra.ht_mcs[1]);
+	S_MCU_U8(sta_rec_ra.ht_mcs[2]);
+	S_MCU_U8(sta_rec_ra.ht_mcs[3]);
+	S_MCU_U8(sta_rec_ra.mmps_mode);
+	S_MCU_U8(sta_rec_ra.gband_256);
+	S_MCU_U8(sta_rec_ra.af);
+	S_MCU_U8(sta_rec_ra.auth_wapi_mode);
+	S_MCU_U8(sta_rec_ra.rate_len);
+	S_MCU_U8(sta_rec_ra.supp_mode);
+	S_MCU_U8(sta_rec_ra.supp_cck_rate);
+	S_MCU_U8(sta_rec_ra.supp_ofdm_rate);
+	S_MCU_LE32X(sta_rec_ra.supp_ht_mcs);
+	S_MCU_LE16X(sta_rec_ra.supp_vht_mcs[0]);
+	S_MCU_LE16X(sta_rec_ra.supp_vht_mcs[1]);
+	S_MCU_LE16X(sta_rec_ra.supp_vht_mcs[2]);
+	S_MCU_LE16X(sta_rec_ra.supp_vht_mcs[3]);
+	S_MCU_U8(sta_rec_ra.op_mode);
+	S_MCU_U8(sta_rec_ra.op_vht_chan_width);
+	S_MCU_U8(sta_rec_ra.op_vht_rx_nss);
+	S_MCU_U8(sta_rec_ra.op_vht_rx_nss_type);
+	S_MCU_LE32X(sta_rec_ra.sta_cap);
+	S_MCU_U8(sta_rec_ra.phy.type);
+	S_MCU_U8X(sta_rec_ra.phy.flag);
+	S_MCU_U8(sta_rec_ra.phy.stbc);
+	S_MCU_U8(sta_rec_ra.phy.sgi);
+	S_MCU_U8(sta_rec_ra.phy.bw);
+	S_MCU_U8(sta_rec_ra.phy.ldpc);
+	S_MCU_U8(sta_rec_ra.phy.mcs);
+	S_MCU_U8(sta_rec_ra.phy.nss);
+	S_MCU_U8(sta_rec_ra.phy.he_ltf);
 
 	return 0;
 }
