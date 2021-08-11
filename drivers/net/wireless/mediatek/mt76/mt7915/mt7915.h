@@ -125,6 +125,13 @@ struct mt7915_vif_cap {
 
 struct mt7915_vif_last_mcu {
 	struct bss_info_basic bss_info_basic;
+	struct bss_info_omac bss_info_omac;
+	struct bss_info_rf_ch bss_info_rf_ch;
+	struct bss_info_ra bss_info_ra;
+	struct bss_info_he bss_info_he;
+	struct bss_info_hw_amsdu bss_info_hw_amsdu;
+	struct bss_info_ext_bss bss_info_ext_bss;
+	struct bss_info_bmc_rate bss_info_bmc_rate;
 };
 
 struct mt7915_vif {

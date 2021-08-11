@@ -776,6 +776,8 @@ mt7915_mcu_bss_omac_tlv(struct sk_buff *skb, struct ieee80211_vif *vif)
 	omac->omac_idx = mvif->omac_idx;
 	omac->band_idx = mvif->band_idx;
 	omac->hw_bss_idx = idx;
+
+	memcpy(&mvif->last_mcu.bss_info_omac, omac, sizeof(*omac));
 }
 
 struct mt7915_he_obss_narrow_bw_ru_data {
@@ -825,6 +827,7 @@ static void
 mt7915_mcu_bss_rfch_tlv(struct sk_buff *skb, struct ieee80211_vif *vif,
 			struct mt7915_phy *phy)
 {
+	struct mt7915_vif *mvif = (struct mt7915_vif *)vif->drv_priv;
 	struct cfg80211_chan_def *chandef = &phy->mt76->chandef;
 	struct bss_info_rf_ch *ch;
 	struct tlv *tlv;
@@ -857,12 +860,15 @@ mt7915_mcu_bss_rfch_tlv(struct sk_buff *skb, struct ieee80211_vif *vif,
 	} else {
 		ch->he_all_disable = true;
 	}
+
+	memcpy(&mvif->last_mcu.bss_info_rf_ch, ch, sizeof(*ch));
 }
 
 static void
 mt7915_mcu_bss_ra_tlv(struct sk_buff *skb, struct ieee80211_vif *vif,
 		      struct mt7915_phy *phy)
 {
+	struct mt7915_vif *mvif = (struct mt7915_vif *)vif->drv_priv;
 	int max_nss = hweight8(phy->mt76->chainmask);
 	struct bss_info_ra *ra;
 	struct tlv *tlv;
@@ -883,6 +889,8 @@ mt7915_mcu_bss_ra_tlv(struct sk_buff *skb, struct ieee80211_vif *vif,
 	ra->phy_cap = cpu_to_le32(0xfdf);
 	ra->interval = cpu_to_le32(500);
 	ra->fast_interval = cpu_to_le32(100);
+
+	memcpy(&mvif->last_mcu.bss_info_ra, ra, sizeof(*ra));
 }
 
 static void
@@ -891,6 +899,7 @@ mt7915_mcu_bss_he_tlv(struct sk_buff *skb, struct ieee80211_vif *vif,
 {
 #define DEFAULT_HE_PE_DURATION		4
 #define DEFAULT_HE_DURATION_RTS_THRES	1023
+	struct mt7915_vif *mvif = (struct mt7915_vif *)vif->drv_priv;
 	const struct ieee80211_sta_he_cap *cap;
 	struct bss_info_he *he;
 	struct tlv *tlv;
@@ -911,10 +920,13 @@ mt7915_mcu_bss_he_tlv(struct sk_buff *skb, struct ieee80211_vif *vif,
 	he->max_nss_mcs[CMD_HE_MCS_BW80] = cap->he_mcs_nss_supp.tx_mcs_80;
 	he->max_nss_mcs[CMD_HE_MCS_BW160] = cap->he_mcs_nss_supp.tx_mcs_160;
 	he->max_nss_mcs[CMD_HE_MCS_BW8080] = cap->he_mcs_nss_supp.tx_mcs_80p80;
+
+	memcpy(&mvif->last_mcu.bss_info_he, he, sizeof(*he));
 }
 
 static void
-mt7915_mcu_bss_hw_amsdu_tlv(struct sk_buff *skb)
+mt7915_mcu_bss_hw_amsdu_tlv(struct sk_buff *skb,
+			    struct mt7915_vif *mvif)
 {
 #define TXD_CMP_MAP1		GENMASK(15, 0)
 #define TXD_CMP_MAP2		(GENMASK(31, 0) & ~BIT(23))
@@ -928,6 +940,8 @@ mt7915_mcu_bss_hw_amsdu_tlv(struct sk_buff *skb)
 	amsdu->cmp_bitmap_1 = cpu_to_le32(TXD_CMP_MAP2);
 	amsdu->trig_thres = cpu_to_le16(2);
 	amsdu->enable = true;
+
+	memcpy(&mvif->last_mcu.bss_info_hw_amsdu, amsdu, sizeof(*amsdu));
 }
 
 static void
@@ -948,10 +962,13 @@ mt7915_mcu_bss_ext_tlv(struct sk_buff *skb, struct mt7915_vif *mvif)
 	ext = (struct bss_info_ext_bss *)tlv;
 	tsf_offset = ext_bss_idx * BCN_TX_ESTIMATE_TIME;
 	ext->mbss_tsf_offset = cpu_to_le32(tsf_offset);
+
+	memcpy(&mvif->last_mcu.bss_info_ext_bss, ext, sizeof(*ext));
 }
 
 static void
-mt7915_mcu_bss_bmc_tlv(struct sk_buff *skb, struct mt7915_phy *phy)
+mt7915_mcu_bss_bmc_tlv(struct sk_buff *skb, struct mt7915_phy *phy,
+		       struct mt7915_vif *mvif)
 {
 	struct bss_info_bmc_rate *bmc;
 	struct cfg80211_chan_def *chandef = &phy->mt76->chandef;
@@ -967,6 +984,8 @@ mt7915_mcu_bss_bmc_tlv(struct sk_buff *skb, struct mt7915_phy *phy)
 		bmc->bc_trans = cpu_to_le16(0x2000);
 		bmc->mc_trans = cpu_to_le16(0x2080);
 	}
+
+	memcpy(&mvif->last_mcu.bss_info_bmc_rate, bmc, sizeof(*bmc));
 }
 
 static int
@@ -1034,9 +1053,9 @@ int mt7915_mcu_add_bss_info(struct mt7915_phy *phy,
 
 	if (enable) {
 		mt7915_mcu_bss_rfch_tlv(skb, vif, phy);
-		mt7915_mcu_bss_bmc_tlv(skb, phy);
+		mt7915_mcu_bss_bmc_tlv(skb, phy, mvif);
 		mt7915_mcu_bss_ra_tlv(skb, vif, phy);
-		mt7915_mcu_bss_hw_amsdu_tlv(skb);
+		mt7915_mcu_bss_hw_amsdu_tlv(skb, mvif);
 
 		if (vif->bss_conf.he_support)
 			mt7915_mcu_bss_he_tlv(skb, vif, phy);

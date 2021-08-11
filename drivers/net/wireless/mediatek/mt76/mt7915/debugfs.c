@@ -934,22 +934,32 @@ mt7915_mcu_settings_show(struct seq_file *file, void *data)
 
 #define MCU_LE32(a)						\
 	seq_printf(file,					\
-		   "\t" #a ":\t%d\n",				\
+		   "\t%-42s %d\n", #a,				\
 		   le32_to_cpu(mvif->last_mcu.a))		\
 
 #define MCU_LE16(a)						\
 	seq_printf(file,					\
-		   "\t" #a ":\t%d\n",				\
+		   "\t%-42s %d\n", #a,				\
 		   le16_to_cpu(mvif->last_mcu.a))		\
 
 #define MCU_MAC(a)						\
 	seq_printf(file,					\
-		   "\t" #a ":\t%pM\n",				\
+		   "\t%-42s %pM\n", #a,				\
 		   mvif->last_mcu.a)				\
 
 #define MCU_U8(a)						\
 	seq_printf(file,					\
-		   "\t" #a ":\t%d\n",				\
+		   "\t%-42s %d\n", #a,				\
+		   (unsigned int)(mvif->last_mcu.a))		\
+
+#define MCU_U16(a)						\
+	seq_printf(file,					\
+		   "\t%-42s %d\n", #a,				\
+		   (unsigned int)(mvif->last_mcu.a))		\
+
+#define MCU_S16(a)						\
+	seq_printf(file,					\
+		   "\t%-42s %d\n", #a,				\
 		   (unsigned int)(mvif->last_mcu.a))		\
 
 	MCU_LE32(bss_info_basic.network_type);
@@ -965,6 +975,68 @@ mt7915_mcu_settings_show(struct seq_file *file, void *data)
 	MCU_U8(bss_info_basic.max_bssid);
 	MCU_U8(bss_info_basic.non_tx_bssid);
 	MCU_U8(bss_info_basic.bmc_wcid_hi);
+
+	seq_puts(file, "\n");
+	MCU_U8(bss_info_omac.hw_bss_idx);
+	MCU_U8(bss_info_omac.omac_idx);
+	MCU_U8(bss_info_omac.band_idx);
+
+	seq_puts(file, "\n");
+	MCU_U8(bss_info_rf_ch.pri_ch);
+	MCU_U8(bss_info_rf_ch.center_ch0);
+	MCU_U8(bss_info_rf_ch.center_ch1);
+	MCU_U8(bss_info_rf_ch.bw);
+	MCU_U8(bss_info_rf_ch.he_ru26_block);
+	MCU_U8(bss_info_rf_ch.he_all_disable);
+
+	seq_puts(file, "\n");
+	MCU_U8(bss_info_ra.op_mode);
+	MCU_U8(bss_info_ra.adhoc_en);
+	MCU_U8(bss_info_ra.short_preamble);
+	MCU_U8(bss_info_ra.tx_streams);
+	MCU_U8(bss_info_ra.rx_streams);
+	MCU_U8(bss_info_ra.algo);
+	MCU_U8(bss_info_ra.force_sgi);
+	MCU_U8(bss_info_ra.force_gf);
+	MCU_U8(bss_info_ra.ht_mode);
+	MCU_U8(bss_info_ra.has_20_sta);
+	MCU_U8(bss_info_ra.bss_width_trigger_events);
+	MCU_U8(bss_info_ra.vht_nss_cap);
+	/* these are not used, evidently */
+	/* MCU_U8(bss_info_ra.vht_bw_signal); */
+	/* MCU_U8(bss_info_ra.vht_force_sgi); */
+	MCU_U8(bss_info_ra.se_off);
+	MCU_U8(bss_info_ra.antenna_idx);
+	MCU_U8(bss_info_ra.train_up_rule);
+	MCU_U16(bss_info_ra.train_up_high_thres);
+	MCU_S16(bss_info_ra.train_up_rule_rssi);
+	MCU_U16(bss_info_ra.low_traffic_thres);
+	MCU_LE16(bss_info_ra.max_phyrate);
+	MCU_LE32(bss_info_ra.phy_cap);
+	MCU_LE32(bss_info_ra.interval);
+	MCU_LE32(bss_info_ra.fast_interval);
+
+	seq_puts(file, "\n");
+	MCU_U8(bss_info_he.he_pe_duration);
+	MCU_U8(bss_info_he.vht_op_info_present);
+	MCU_LE16(bss_info_he.he_rts_thres);
+	MCU_LE16(bss_info_he.max_nss_mcs[CMD_HE_MCS_BW80]);
+	MCU_LE16(bss_info_he.max_nss_mcs[CMD_HE_MCS_BW160]);
+	MCU_LE16(bss_info_he.max_nss_mcs[CMD_HE_MCS_BW8080]);
+
+	seq_puts(file, "\n");
+	MCU_LE32(bss_info_hw_amsdu.cmp_bitmap_0);
+	MCU_LE32(bss_info_hw_amsdu.cmp_bitmap_1);
+	MCU_LE16(bss_info_hw_amsdu.trig_thres);
+	MCU_U8(bss_info_hw_amsdu.enable);
+
+	seq_puts(file, "\n");
+	MCU_LE32(bss_info_ext_bss.mbss_tsf_offset);
+
+	seq_puts(file, "\n");
+	MCU_LE16(bss_info_bmc_rate.bc_trans);
+	MCU_LE16(bss_info_bmc_rate.mc_trans);
+	MCU_U8(bss_info_bmc_rate.short_preamble);
 
 	return 0;
 }
