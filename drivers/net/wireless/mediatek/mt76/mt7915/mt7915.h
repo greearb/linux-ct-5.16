@@ -105,6 +105,7 @@ struct mt7915_sta_last_mcu {
 	struct sta_rec_bf sta_rec_bf;
 	struct sta_rec_bfee sta_rec_bfee;
 	struct sta_rec_ra sta_rec_ra;
+	struct sta_rec_ra_fixed sta_rec_ra_fixed;
 };
 
 struct mt7915_sta {

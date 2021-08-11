@@ -2522,6 +2522,7 @@ int mt7915_mcu_set_fixed_rate(struct mt7915_dev *dev,
 	}
 
 out:
+	memcpy(&msta->last_mcu.sta_rec_ra_fixed, ra, sizeof(*ra));
 	return mt76_mcu_skb_send_msg(&dev->mt76, skb,
 				     MCU_EXT_CMD(STA_REC_UPDATE), true);
 }

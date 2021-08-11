@@ -1273,6 +1273,27 @@ mt7915_mcu_settings_show(struct seq_file *file, void *data)
 	S_MCU_U8(sta_rec_ra.phy.nss);
 	S_MCU_U8(sta_rec_ra.phy.he_ltf);
 
+	seq_puts(file, "\n");
+	S_MCU_LE32X(sta_rec_ra_fixed.field);
+	S_MCU_U8(sta_rec_ra_fixed.op_mode);
+	S_MCU_U8(sta_rec_ra_fixed.op_vht_chan_width);
+	S_MCU_U8(sta_rec_ra_fixed.op_vht_rx_nss);
+	S_MCU_U8(sta_rec_ra_fixed.op_vht_rx_nss_type);
+	S_MCU_U8(sta_rec_ra_fixed.phy.type);
+	S_MCU_U8X(sta_rec_ra_fixed.phy.flag);
+	S_MCU_U8(sta_rec_ra_fixed.phy.stbc);
+	S_MCU_U8(sta_rec_ra_fixed.phy.sgi);
+	S_MCU_U8(sta_rec_ra_fixed.phy.bw);
+	S_MCU_U8(sta_rec_ra_fixed.phy.ldpc);
+	S_MCU_U8(sta_rec_ra_fixed.phy.mcs);
+	S_MCU_U8(sta_rec_ra_fixed.phy.nss);
+	S_MCU_U8(sta_rec_ra_fixed.phy.he_ltf);
+
+	S_MCU_U8(sta_rec_ra_fixed.spe_en);
+	S_MCU_U8(sta_rec_ra_fixed.short_preamble);
+	S_MCU_U8(sta_rec_ra_fixed.is_5g);
+	S_MCU_U8(sta_rec_ra_fixed.mmps_mode);
+
 	return 0;
 }
 
