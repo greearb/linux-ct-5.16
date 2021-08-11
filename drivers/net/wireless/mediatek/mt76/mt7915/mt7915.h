@@ -87,6 +87,18 @@ struct mt7915_twt_flow {
 	u8 sched:1;
 };
 
+struct mt7915_sta_last_mcu {
+	struct sta_rec_ba sta_rec_ba;
+	struct wtbl_ba wtbl_ba;
+	struct wtbl_rx wtbl_rx;
+	struct sta_rec_basic sta_rec_basic;
+	struct sta_rec_he sta_rec_he;
+	struct sta_rec_uapsd sta_rec_uapsd;
+	struct sta_rec_muru sta_rec_muru;
+	struct sta_rec_vht sta_rec_vht;
+	struct sta_rec_amsdu sta_rec_amsdu;
+};
+
 struct mt7915_sta {
 	struct mt76_wcid wcid; /* must be first */
 
@@ -105,6 +117,8 @@ struct mt7915_sta {
 	struct mt7915_sta_key_conf bip;
 
 	struct mt76_testmode_data test;
+
+	struct mt7915_sta_last_mcu last_mcu;
 
 	struct {
 		u8 flowid_mask;
