@@ -325,8 +325,9 @@ struct mt7915_phy {
 	s16 coverage_class;
 	u8 slottime;
 
-	u8 rdd_state;
-	int dfs_state;
+	u8 rdd_state; /* radar detection started bitfield */
+	enum nl80211_chan_width dfs_ch_width;
+	u32 dfs_center_freq;
 
 	u32 rx_ampdu_ts;
 	u32 ampdu_ref;
@@ -638,6 +639,7 @@ void mt7915_update_channel(struct mt76_phy *mphy);
 int mt7915_mcu_muru_debug_set(struct mt7915_dev *dev, bool enable);
 int mt7915_mcu_muru_debug_get(struct mt7915_phy *phy);
 int mt7915_init_debugfs(struct mt7915_phy *phy);
+int mt7915_dfs_stop_radar_detector(struct mt7915_phy *phy, bool ext_phy);
 #ifdef CONFIG_MAC80211_DEBUGFS
 void mt7915_sta_add_debugfs(struct ieee80211_hw *hw, struct ieee80211_vif *vif,
 			    struct ieee80211_sta *sta, struct dentry *dir);

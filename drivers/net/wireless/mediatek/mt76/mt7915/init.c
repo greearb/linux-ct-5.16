@@ -291,6 +291,7 @@ mt7915_regd_notifier(struct wiphy *wiphy,
 	struct mt76_phy *mphy = hw->priv;
 	struct mt7915_phy *phy = mphy->priv;
 	struct cfg80211_chan_def *chandef = &mphy->chandef;
+	int ret;
 
 	memcpy(dev->mt76.alpha2, request->alpha2, sizeof(dev->mt76.alpha2));
 	dev->mt76.region = request->dfs_region;
@@ -304,7 +305,10 @@ mt7915_regd_notifier(struct wiphy *wiphy,
 	if (!(chandef->chan->flags & IEEE80211_CHAN_RADAR))
 		return;
 
-	mt7915_dfs_init_radar_detector(phy);
+	ret = mt7915_dfs_init_radar_detector(phy);
+	if (ret < 0)
+		dev_err(dev->mt76.dev, "init-wifi: dfs-init-radar-detector failed: %d",
+			ret);
 }
 
 static void
@@ -341,11 +345,12 @@ mt7915_init_wiphy(struct ieee80211_hw *hw)
 	wiphy_ext_feature_set(wiphy, NL80211_EXT_FEATURE_BEACON_RATE_VHT);
 	wiphy_ext_feature_set(wiphy, NL80211_EXT_FEATURE_BEACON_RATE_HE);
 
-	if (!mdev->dev->of_node ||
-	    !of_property_read_bool(mdev->dev->of_node,
-				   "mediatek,disable-radar-background"))
-		wiphy_ext_feature_set(wiphy,
-				      NL80211_EXT_FEATURE_RADAR_BACKGROUND);
+	// TODO:  Re-enable when merging with upstream.
+	//if (!mdev->dev->of_node ||
+	//    !of_property_read_bool(mdev->dev->of_node,
+	//			   "mediatek,disable-radar-background"))
+	//	wiphy_ext_feature_set(wiphy,
+	//			      NL80211_EXT_FEATURE_RADAR_BACKGROUND);
 
 	ieee80211_hw_set(hw, HAS_RATE_CONTROL);
 	ieee80211_hw_set(hw, SUPPORTS_TX_ENCAP_OFFLOAD);
@@ -1005,8 +1010,6 @@ int mt7915_register_device(struct mt7915_dev *dev)
 		return ret;
 
 	mt7915_init_wiphy(hw);
-
-	dev->phy.dfs_state = -1;
 
 #ifdef CONFIG_NL80211_TESTMODE
 	dev->mt76.test_ops = &mt7915_testmode_ops;

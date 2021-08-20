@@ -307,6 +307,8 @@ static void mt7915_init_dfs_state(struct mt7915_phy *phy)
 	struct mt76_phy *mphy = phy->mt76;
 	struct ieee80211_hw *hw = mphy->hw;
 	struct cfg80211_chan_def *chandef = &hw->conf.chandef;
+	struct mt7915_dev *dev = phy->dev;
+	bool ext_phy = phy != &dev->phy;
 
 	if (hw->conf.flags & IEEE80211_CONF_OFFCHANNEL)
 		return;
@@ -315,11 +317,23 @@ static void mt7915_init_dfs_state(struct mt7915_phy *phy)
 	    !(mphy->chandef.chan->flags & IEEE80211_CHAN_RADAR))
 		return;
 
-	if (mphy->chandef.chan->center_freq == chandef->chan->center_freq &&
-	    mphy->chandef.width == chandef->width)
+	if (phy->dfs_center_freq == chandef->chan->center_freq &&
+	    phy->dfs_ch_width == chandef->width)
 		return;
 
-	phy->dfs_state = -1;
+	/* We are being moved to a new frequency/bw, still on DFS.  Stop
+	 * any existing DFS, then will start it again in the
+	 * init-radar-detector logic.
+	 */
+	if (phy->rdd_state) {
+		dev_dbg(dev->mt76.dev,
+			"init-dfs-state, channel changed, old: %d:%d  new: %d:%d, stopping radar.",
+			phy->dfs_center_freq, phy->dfs_ch_width,
+			chandef->chan->center_freq, chandef->width);
+		mt7915_dfs_stop_radar_detector(phy, ext_phy);
+	}
+	phy->dfs_center_freq = chandef->chan->center_freq;
+	phy->dfs_ch_width = chandef->width;
 }
 
 int mt7915_set_channel(struct mt7915_phy *phy)
@@ -347,6 +361,9 @@ int mt7915_set_channel(struct mt7915_phy *phy)
 
 	mt7915_mac_set_timing(phy);
 	ret = mt7915_dfs_init_radar_detector(phy);
+	if (ret < 0)
+		dev_err(dev->mt76.dev, "set-channel: dfs-init-radar-detector failed: %d",
+			ret);
 	mt7915_mac_cca_stats_reset(phy);
 
 	mt7915_mac_reset_counters(phy);
@@ -1523,6 +1540,7 @@ mt7915_twt_teardown_request(struct ieee80211_hw *hw,
 	mutex_unlock(&dev->mt76.mutex);
 }
 
+/*
 static int
 mt7915_set_radar_background(struct ieee80211_hw *hw,
 			    struct cfg80211_chan_def *chandef)
@@ -1538,12 +1556,12 @@ mt7915_set_radar_background(struct ieee80211_hw *hw,
 		goto out;
 
 	if (dev->rdd2_phy && dev->rdd2_phy != phy) {
-		/* rdd2 is already locked */
+// rdd2 is already locked
 		ret = -EBUSY;
 		goto out;
 	}
 
-	/* rdd2 already configured on a radar channel */
+	// rdd2 already configured on a radar channel
 	running = dev->rdd2_phy &&
 		  cfg80211_chandef_valid(&dev->rdd2_chandef) &&
 		  !!(dev->rdd2_chandef.chan->flags & IEEE80211_CHAN_RADAR);
@@ -1571,6 +1589,7 @@ out:
 
 	return ret;
 }
+*/
 
 const struct ieee80211_ops mt7915_ops = {
 	.tx = mt7915_tx,
@@ -1618,5 +1637,5 @@ const struct ieee80211_ops mt7915_ops = {
 #ifdef CONFIG_MAC80211_DEBUGFS
 	.sta_add_debugfs = mt7915_sta_add_debugfs,
 #endif
-	.set_radar_background = mt7915_set_radar_background,
+	// TODO:  Re-enable .set_radar_background = mt7915_set_radar_background,
 };
