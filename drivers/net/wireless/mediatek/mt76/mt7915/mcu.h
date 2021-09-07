@@ -23,6 +23,25 @@ struct mt7915_mcu_txd {
 	u32 reserved[5];
 } __packed __aligned(4);
 
+struct mt7915_mcu_chan_info {
+	u8 control_ch;
+	u8 center_ch;
+	u8 bw;
+	u8 tx_streams_num;
+	u8 rx_streams;	/* mask, or num if cmd ==  MCU_EXT_CMD(CHANNEL_SWITCH */
+	u8 switch_reason;
+	u8 band_idx;
+	u8 center_ch2;	/* for 80+80 only */
+	__le16 cac_case;
+	u8 channel_band;
+	u8 rsv0;
+	__le32 outband_freq;
+	u8 txpower_drop;
+	u8 ap_bw;
+	u8 ap_center_ch;
+	u8 rsv1[57];
+} __packed;
+
 /* event table */
 enum {
 	MCU_EVENT_TARGET_ADDRESS_LEN = 0x01,

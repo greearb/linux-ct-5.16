@@ -798,6 +798,87 @@ mt7915_twt_stats(struct seq_file *s, void *data)
 	return 0;
 }
 
+static int
+mt7915_last_mcu_read(struct seq_file *file, void *data)
+{
+	struct mt7915_dev *dev = dev_get_drvdata(file->private);
+
+	seq_puts(file, "MCU Settings:\n");
+
+#define O_MCU_LE32(o, a)					\
+	seq_printf(file,					\
+		   "\t%-42s %d\n", #a,				\
+		   le32_to_cpu((o)->last_mcu.a))		\
+
+#define O_MCU_LE32X(o, a)					\
+	seq_printf(file,					\
+		   "\t%-42s 0x%0x\n", #a,			\
+		   le32_to_cpu((o)->last_mcu.a))		\
+
+#define O_MCU_LE16(o, a)					\
+	seq_printf(file,					\
+		   "\t%-42s %d\n", #a,				\
+		   le16_to_cpu((o)->last_mcu.a))		\
+
+#define O_MCU_LE16X(o, a)					\
+	seq_printf(file,					\
+		   "\t%-42s 0x%0x\n", #a,			\
+		   le16_to_cpu((o)->last_mcu.a))		\
+
+#define O_MCU_MAC(o, a)						\
+	seq_printf(file,					\
+		   "\t%-42s %pM\n", #a,				\
+		   (o)->last_mcu.a)				\
+
+#define O_MCU_U8(o, a)						\
+	seq_printf(file,					\
+		   "\t%-42s %d\n", #a,				\
+		   (unsigned int)((o)->last_mcu.a))		\
+
+#define O_MCU_U8X(o, a)						\
+	seq_printf(file,					\
+		   "\t%-42s 0x%x\n", #a,			\
+		   (unsigned int)((o)->last_mcu.a))		\
+
+#define O_MCU_U16(o, a)						\
+	seq_printf(file,					\
+		   "\t%-42s %d\n", #a,				\
+		   (unsigned int)((o)->last_mcu.a))		\
+
+#define O_MCU_S16(o, a)						\
+	seq_printf(file,					\
+		   "\t%-42s %d\n", #a,				\
+		   (unsigned int)((o)->last_mcu.a))		\
+
+/* dev variants */
+#define D_MCU_LE32X(a)	O_MCU_LE32X(dev, a)
+#define D_MCU_LE32(a)	O_MCU_LE32(dev, a)
+#define D_MCU_LE16X(a)	O_MCU_LE16X(dev, a)
+#define D_MCU_LE16(a)	O_MCU_LE16(dev, a)
+#define D_MCU_MAC(a)	O_MCU_MAC(dev, a)
+#define D_MCU_U8(a)	O_MCU_U8(dev, a)
+#define D_MCU_U8X(a)	O_MCU_U8X(dev, a)
+#define D_MCU_U16(a)	O_MCU_U16(dev, a)
+#define D_MCU_S16(a)	O_MCU_S16(dev, a)
+
+	D_MCU_U8(mcu_chan_info.control_ch);
+	D_MCU_U8(mcu_chan_info.center_ch);
+	D_MCU_U8(mcu_chan_info.bw);
+	D_MCU_U8(mcu_chan_info.tx_streams_num);
+	D_MCU_U8(mcu_chan_info.rx_streams);
+	D_MCU_U8(mcu_chan_info.switch_reason);
+	D_MCU_U8(mcu_chan_info.band_idx);
+	D_MCU_U8(mcu_chan_info.center_ch2);
+	D_MCU_LE16(mcu_chan_info.cac_case);
+	D_MCU_U8(mcu_chan_info.channel_band);
+	D_MCU_LE32(mcu_chan_info.outband_freq);
+	D_MCU_U8(mcu_chan_info.txpower_drop);
+	D_MCU_U8(mcu_chan_info.ap_bw);
+	D_MCU_U8(mcu_chan_info.ap_center_ch);
+
+	return 0;
+}
+
 int mt7915_init_debugfs(struct mt7915_phy *phy)
 {
 	struct mt7915_dev *dev = phy->dev;
@@ -827,6 +908,8 @@ int mt7915_init_debugfs(struct mt7915_phy *phy)
 			    &mt7915_rate_txpower_fops);
 	debugfs_create_devm_seqfile(dev->mt76.dev, "twt_stats", dir,
 				    mt7915_twt_stats);
+	debugfs_create_devm_seqfile(dev->mt76.dev, "last_mcu", dir,
+				    mt7915_last_mcu_read);
 	debugfs_create_file("ser_trigger", 0200, dir, dev, &fops_ser_trigger);
 	if (!dev->dbdc_support || ext_phy) {
 		debugfs_create_u32("dfs_hw_pattern", 0400, dir,
@@ -932,51 +1015,6 @@ mt7915_mcu_settings_show(struct seq_file *file, void *data)
 	/* Last-applied settings to MCU */
 	seq_puts(file, "MCU Settings:\n");
 	seq_puts(file, " VIF Settings:\n");
-
-#define O_MCU_LE32(o, a)					\
-	seq_printf(file,					\
-		   "\t%-42s %d\n", #a,				\
-		   le32_to_cpu((o)->last_mcu.a))		\
-
-#define O_MCU_LE32X(o, a)					\
-	seq_printf(file,					\
-		   "\t%-42s 0x%0x\n", #a,			\
-		   le32_to_cpu((o)->last_mcu.a))		\
-
-#define O_MCU_LE16(o, a)					\
-	seq_printf(file,					\
-		   "\t%-42s %d\n", #a,				\
-		   le16_to_cpu((o)->last_mcu.a))		\
-
-#define O_MCU_LE16X(o, a)					\
-	seq_printf(file,					\
-		   "\t%-42s 0x%0hx\n", #a,			\
-		   le16_to_cpu((o)->last_mcu.a))		\
-
-#define O_MCU_MAC(o, a)						\
-	seq_printf(file,					\
-		   "\t%-42s %pM\n", #a,				\
-		   (o)->last_mcu.a)				\
-
-#define O_MCU_U8(o, a)						\
-	seq_printf(file,					\
-		   "\t%-42s %d\n", #a,				\
-		   (unsigned int)((o)->last_mcu.a))		\
-
-#define O_MCU_U8X(o, a)						\
-	seq_printf(file,					\
-		   "\t%-42s 0x%x\n", #a,				\
-		   (unsigned int)((o)->last_mcu.a))			\
-
-#define O_MCU_U16(o, a)						\
-	seq_printf(file,					\
-		   "\t%-42s %d\n", #a,				\
-		   (unsigned int)((o)->last_mcu.a))		\
-
-#define O_MCU_S16(o, a)						\
-	seq_printf(file,					\
-		   "\t%-42s %d\n", #a,				\
-		   (unsigned int)((o)->last_mcu.a))		\
 
 #define MCU_LE32X(a)	O_MCU_LE32X(mvif, a)
 #define MCU_LE32(a)	O_MCU_LE32(mvif, a)

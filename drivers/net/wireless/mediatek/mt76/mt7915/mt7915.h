@@ -310,6 +310,10 @@ struct mt7915_phy {
 #endif
 };
 
+struct mt7915_dev_last_mcu {
+	struct mt7915_mcu_chan_info mcu_chan_info;
+};
+
 struct mt7915_dev {
 	union { /* must be first */
 		struct mt76_dev mt76;
@@ -321,6 +325,8 @@ struct mt7915_dev {
 	const struct mt76_bus_ops *bus_ops;
 	struct tasklet_struct irq_tasklet;
 	struct mt7915_phy phy;
+
+	struct mt7915_dev_last_mcu last_mcu;
 
 	u16 chainmask;
 	u32 hif_idx;

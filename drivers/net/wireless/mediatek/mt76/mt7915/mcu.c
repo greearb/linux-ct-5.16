@@ -3547,24 +3547,7 @@ int mt7915_mcu_set_chan_info(struct mt7915_phy *phy, int cmd)
 	struct cfg80211_chan_def *chandef = &phy->mt76->chandef;
 	int freq1 = chandef->center_freq1;
 	bool ext_phy = phy != &dev->phy;
-	struct {
-		u8 control_ch;
-		u8 center_ch;
-		u8 bw;
-		u8 tx_streams_num;
-		u8 rx_streams;	/* mask or num */
-		u8 switch_reason;
-		u8 band_idx;
-		u8 center_ch2;	/* for 80+80 only */
-		__le16 cac_case;
-		u8 channel_band;
-		u8 rsv0;
-		__le32 outband_freq;
-		u8 txpower_drop;
-		u8 ap_bw;
-		u8 ap_center_ch;
-		u8 rsv1[57];
-	} __packed req = {
+	struct mt7915_mcu_chan_info req = {
 		.control_ch = chandef->chan->hw_value,
 		.center_ch = ieee80211_frequency_to_channel(freq1),
 		.bw = mt7915_mcu_chan_bw(chandef),
@@ -3605,6 +3588,8 @@ int mt7915_mcu_set_chan_info(struct mt7915_phy *phy, int cmd)
 
 		req.center_ch2 = ieee80211_frequency_to_channel(freq2);
 	}
+
+	memcpy(&dev->last_mcu.mcu_chan_info, &req, sizeof(req));
 
 	return mt76_mcu_send_msg(&dev->mt76, cmd, &req, sizeof(req), true);
 }
