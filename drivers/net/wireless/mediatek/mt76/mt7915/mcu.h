@@ -1143,6 +1143,14 @@ enum {
 	MURU_PLATFORM_TYPE_PERF_LEVEL_2,
 };
 
+enum mt_debug {
+	DEBUG_TXCMD = 62,
+	DEBUG_CMD_RPT_TX,
+	DEBUG_CMD_RPT_TRIG,
+	DEBUG_SPL,
+	DEBUG_RPT_RX,
+};
+
 #define MT7915_WTBL_UPDATE_MAX_SIZE	(sizeof(struct wtbl_req_hdr) +	\
 					 sizeof(struct wtbl_generic) +	\
 					 sizeof(struct wtbl_rx) +	\

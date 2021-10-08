@@ -85,14 +85,8 @@ static int
 mt7915_fw_debug_wm_set(void *data, u64 val)
 {
 	struct mt7915_dev *dev = data;
-	enum {
-		DEBUG_TXCMD = 62,
-		DEBUG_CMD_RPT_TX,
-		DEBUG_CMD_RPT_TRIG,
-		DEBUG_SPL,
-		DEBUG_RPT_RX,
-	} debug;
 	int ret;
+	enum mt_debug debug;
 
 	dev->fw_debug_wm = val ? MCU_FW_LOG_TO_HOST : 0;
 
