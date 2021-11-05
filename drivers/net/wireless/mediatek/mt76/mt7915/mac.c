@@ -1529,9 +1529,10 @@ mt7915_mac_tx_free(struct mt7915_dev *dev, struct sk_buff *skb)
 	struct ieee80211_sta *sta = NULL;
 	LIST_HEAD(free_list);
 	struct sk_buff *tmp;
-	u8 i;
-	u16 count;
-	bool wake = false;
+	bool v3, wake = false;
+	u16 total, count = 0;
+	u32 txd = le32_to_cpu(free->txd);
+	u32 *cur_info;
 
 	/* clean DMA queues and unmap buffers first */
 	mt76_queue_tx_cleanup(dev, dev->mphy.q_tx[MT_TXQ_PSD], false);
@@ -1541,17 +1542,14 @@ mt7915_mac_tx_free(struct mt7915_dev *dev, struct sk_buff *skb)
 		mt76_queue_tx_cleanup(dev, mphy_ext->q_tx[MT_TXQ_BE], false);
 	}
 
-	/*
-	 * TODO: MT_TX_FREE_LATENCY is msdu time from the TXD is queued into PLE,
-	 * to the time ack is received or dropped by hw (air + hw queue time).
-	 * Should avoid accessing WTBL to get Tx airtime, and use it instead.
-	 */
 	/* free->ctrl is high u16 of first DW in the txfree struct */
-	count = FIELD_GET(MT_TX_FREE_MSDU_CNT, le16_to_cpu(free->ctrl));
-	for (i = 0; i < count; i++) {
-		u32 msdu, tx_cnt, tx_status;
-		u32 info = le32_to_cpu(free->info[i]); /* DW3+ */
-		u32 ampdu;
+	total = FIELD_GET(MT_TX_FREE_MSDU_CNT, le16_to_cpu(free->ctrl));
+	v3 = (FIELD_GET(MT_TX_FREE_VER, txd) == 0x4);
+
+	for (cur_info = &free->info[0]; count < total; cur_info++) {
+		u32 msdu, info = le32_to_cpu(*cur_info);
+		u8 i;
+		u32 tx_cnt, tx_status, ampdu;
 
 		/*
 		 * 1'b1: new wcid pair.
@@ -1562,7 +1560,6 @@ mt7915_mac_tx_free(struct mt7915_dev *dev, struct sk_buff *skb)
 			struct mt76_wcid *wcid;
 			u16 idx;
 
-			count++;
 			idx = FIELD_GET(MT_TX_FREE_WLAN_ID, info);
 			wcid = rcu_dereference(dev->mt76.wcid[idx]);
 			sta = wcid_to_sta(wcid);
@@ -1577,17 +1574,36 @@ mt7915_mac_tx_free(struct mt7915_dev *dev, struct sk_buff *skb)
 			continue;
 		}
 
-		msdu = FIELD_GET(MT_TX_FREE_MSDU_ID, info);
-		txwi = mt76_token_release(mdev, msdu, &wake);
-		if (!txwi)
+		if (v3 && (info & MT_TX_FREE_MPDU_HEADER))
 			continue;
 
-		tx_cnt = FIELD_GET(MT_TX_FREE_TXCNT, info);
-		/* 0 = success, 1 dropped-by-hw, 2 dropped-by-cpu */
-		tx_status = FIELD_GET(MT_TX_FREE_STATUS, info);
-		ampdu = FIELD_GET(MT_TX_FREE_HEAD_OF_PAGE, info);
+		for (i = 0; i < 1 + v3; i++) {
+			if (v3) {
+				msdu = (info >> (15 * i)) & MT_TX_FREE_MSDU_ID_V3;
+				if (msdu == MT_TX_FREE_MSDU_ID_V3)
+					continue;
 
-		mt7915_txwi_free(dev, txwi, sta, &free_list, tx_cnt, tx_status, ampdu);
+				/* TODO:  How to get tx_cnt, tx_status, ampdu*/
+				tx_status = 0;
+				tx_cnt = 1;
+				ampdu = 1;
+			} else {
+				/* mt7915 format */
+				msdu = FIELD_GET(MT_TX_FREE_MSDU_ID, info);
+
+				tx_cnt = FIELD_GET(MT_TX_FREE_TXCNT, info);
+				/* 0 = success, 1 dropped-by-hw, 2 dropped-by-cpu */
+				tx_status = FIELD_GET(MT_TX_FREE_STATUS_V1, info);
+				ampdu = FIELD_GET(MT_TX_FREE_HEAD_OF_PAGE, info);
+			}
+
+			txwi = mt76_token_release(mdev, msdu, &wake);
+			if (!txwi)
+				continue;
+
+			mt7915_txwi_free(dev, txwi, sta, &free_list, tx_cnt, tx_status, ampdu);
+			count++;
+		}
 	}
 
 	mt7915_mac_sta_poll(dev);

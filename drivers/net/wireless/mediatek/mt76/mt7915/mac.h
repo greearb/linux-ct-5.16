@@ -298,24 +298,33 @@ struct mt7915_txp {
 struct mt7915_tx_free {
 	__le16 rx_byte_cnt;
 	__le16 ctrl;
-	u8 txd_cnt;
-	u8 rsv[3];
-	__le32 info[]; /* DW3+ */
+	__le32 txd;
+	__le32 info[]; /* DW3 */
 } __packed __aligned(4);
 
+#define MT_TX_FREE_VER			GENMASK(18, 16)
 #define MT_TX_FREE_MSDU_CNT		GENMASK(9, 0)
 #define MT_TX_FREE_WLAN_ID		GENMASK(23, 14)
+
 /* when configured for txfree latency mode.  See MT_PLE_HOST_RPT0_TX_LATENCY
  * Not enabled by default now.
  */
 #define MT_TX_FREE_LATENCY		GENMASK(12, 0)
+
 /* when configured for txcount mode.  See MT_PLE_HOST_RPT0_TX_LATENCY. */
 #define MT_TX_FREE_TXCNT		GENMASK(12, 0)
-#define MT_TX_FREE_STATUS		GENMASK(14, 13)
+/* 0: success, others: dropped */
+#define MT_TX_FREE_STATUS_V1		GENMASK(14, 13)
 /* 0:  not MPDU, 1:  MSDU is head pkt of TXD page (MPDU) */
 #define MT_TX_FREE_HEAD_OF_PAGE		BIT(15)
+
 #define MT_TX_FREE_MSDU_ID		GENMASK(30, 16)
 #define MT_TX_FREE_PAIR			BIT(31)
+#define MT_TX_FREE_MPDU_HEADER		BIT(30)
+#define MT_TX_FREE_MSDU_ID_V3		GENMASK(14, 0)
+
+/* will support this field in further revision */
+#define MT_TX_FREE_RATE			GENMASK(13, 0)
 
 #define MT_TXS0_FIXED_RATE		BIT(31)
 #define MT_TXS0_BW			GENMASK(30, 29)
