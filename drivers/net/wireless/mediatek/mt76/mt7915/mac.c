@@ -400,6 +400,150 @@ mt7915_mac_decode_he_radiotap(struct sk_buff *skb,
 }
 
 static int
+mt7915_mac_fill_rx_rate(struct mt7915_dev *dev,
+			struct mt76_rx_status *status,
+			struct ieee80211_supported_band *sband,
+			__le32 *rxv, u8* nss, struct mib_stats *mib,
+			struct mt76_sta_stats *stats)
+{
+	u32 v0, v1, v2;
+	u16 legacy;
+	u8 flags, stbc, gi, bw, dcm, mode;
+	int i, idx;
+	bool cck = false;
+
+	/* See RXV document ... */
+
+	v0 = le32_to_cpu(rxv[0]);
+	v1 = le32_to_cpu(rxv[1]);
+	v2 = le32_to_cpu(rxv[2]);
+
+	idx = i = FIELD_GET(MT_PRXV_TX_RATE, v0);
+	*nss = FIELD_GET(MT_PRXV_NSTS, v0) + 1;
+
+	if (!is_mt7915(&dev->mt76)) {
+		stbc = FIELD_GET(MT_PRXV_HT_STBC, v0);
+		gi = FIELD_GET(MT_PRXV_HT_SHORT_GI, v0);
+		mode = FIELD_GET(MT_PRXV_TX_MODE, v0);
+		dcm = FIELD_GET(MT_PRXV_DCM, v0);
+		bw = FIELD_GET(MT_PRXV_FRAME_MODE, v0);
+	} else {
+		stbc = FIELD_GET(MT_CRXV_HT_STBC, v2);
+		gi = FIELD_GET(MT_CRXV_HT_SHORT_GI, v2);
+		mode = FIELD_GET(MT_CRXV_TX_MODE, v2);
+		dcm = !!(idx & GENMASK(3, 0) & MT_PRXV_TX_DCM);
+		bw = FIELD_GET(MT_CRXV_FRAME_MODE, v2);
+	}
+
+	switch (mode) {
+	case MT_PHY_TYPE_CCK:
+		cck = true;
+		fallthrough;
+	case MT_PHY_TYPE_OFDM:
+		i = mt76_get_rate(&dev->mt76, sband, i, cck);
+		legacy = sband->bitrates[i].bitrate;
+		break;
+	case MT_PHY_TYPE_HT_GF:
+	case MT_PHY_TYPE_HT:
+		status->encoding = RX_ENC_HT;
+		if (i > 31)
+			return -EINVAL;
+
+		flags = RATE_INFO_FLAGS_MCS;
+		if (gi)
+			flags |= RATE_INFO_FLAGS_SHORT_GI;
+		break;
+	case MT_PHY_TYPE_VHT:
+		status->nss = *nss;
+		status->encoding = RX_ENC_VHT;
+		if (i > 9)
+			return -EINVAL;
+
+		flags = RATE_INFO_FLAGS_VHT_MCS;
+		if (gi)
+			flags |= RATE_INFO_FLAGS_SHORT_GI;
+		break;
+	case MT_PHY_TYPE_HE_MU:
+		status->flag |= RX_FLAG_RADIOTAP_HE_MU;
+		fallthrough;
+	case MT_PHY_TYPE_HE_SU:
+	case MT_PHY_TYPE_HE_EXT_SU:
+	case MT_PHY_TYPE_HE_TB:
+		status->nss = *nss;
+		status->encoding = RX_ENC_HE;
+		status->flag |= RX_FLAG_RADIOTAP_HE;
+		i &= GENMASK(3, 0);
+
+		if (gi <= NL80211_RATE_INFO_HE_GI_3_2)
+			status->he_gi = gi;
+
+		status->he_dcm = dcm;
+		flags |= RATE_INFO_FLAGS_HE_MCS;
+		break;
+	default:
+		mib->rx_d_bad_mode++;
+		return -EINVAL;
+	}
+	status->rate_idx = i;
+
+	switch (bw) {
+	case IEEE80211_STA_RX_BW_20:
+		if (stats)
+			stats->rx_bw_20++;
+		break;
+	case IEEE80211_STA_RX_BW_40:
+		if (mode & MT_PHY_TYPE_HE_EXT_SU &&
+		    (idx & MT_PRXV_TX_ER_SU_106T)) {
+			status->bw = RATE_INFO_BW_HE_RU;
+			status->he_ru =
+				NL80211_RATE_INFO_HE_RU_ALLOC_106;
+			if (stats) {
+				stats->rx_bw_he_ru++;
+				stats->rx_ru_106++;
+			}
+		} else {
+			status->bw = RATE_INFO_BW_40;
+			if (stats)
+				stats->rx_bw_40++;
+		}
+		break;
+	case IEEE80211_STA_RX_BW_80:
+		status->bw = RATE_INFO_BW_80;
+		if (stats)
+			stats->rx_bw_80++;
+		break;
+	case IEEE80211_STA_RX_BW_160:
+		status->bw = RATE_INFO_BW_160;
+		if (stats)
+			stats->rx_bw_160++;
+		break;
+	default:
+		mib->rx_d_bad_bw++;
+		return -EINVAL;
+	}
+
+	status->enc_flags |= RX_ENC_FLAG_STBC_MASK * stbc;
+	if (mode < MT_PHY_TYPE_HE_SU && gi)
+		status->enc_flags |= RX_ENC_FLAG_SHORT_GI;
+
+	if (stbc) {
+		*nss *= 2;
+		WARN_ON_ONCE(*nss > 4);
+	}
+
+	if (stats) {
+		if (*nss > 3)
+			stats->rx_nss[3]++;
+		else
+			stats->rx_nss[*nss - 1]++;
+
+		stats->rx_mode[mode]++;
+	}
+
+	return 0;
+}
+
+static int
 mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 {
 	struct mt76_rx_status *status = (struct mt76_rx_status *)skb->cb;
@@ -585,6 +729,7 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 	if (rxd1 & MT_RXD1_NORMAL_GROUP_3) {
 		u32 v0, v1, v2;
 		u8 nss;
+		int ret;
 
 		rxv = rxd; /* DW16 assuming group 1,2,3,4 */
 		rxd += 2;
@@ -592,6 +737,8 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 			mib->rx_d_too_short++;
 			return -EINVAL;
 		}
+
+		nss = hweight8(mphy->antenna_mask);
 
 		v0 = le32_to_cpu(rxv[0]);  /* DW16, P-VEC1 31:0 */
 		/* DW17, RX_RCPI copied over P-VEC 64:32 Per RX Format doc. */
@@ -601,6 +748,13 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 		if (v0 & MT_PRXV_HT_AD_CODE)
 			status->enc_flags |= RX_ENC_FLAG_LDPC;
 
+		/* RXD Group 5 - C-RXV */
+		if (rxd1 & MT_RXD1_NORMAL_GROUP_5) {
+			rxd += 18;
+			if ((u8 *)rxd - skb->data >= skb->len)
+				return -EINVAL; /* TODO:  mib error here? */
+		}
+
 		/* TODO:  When group-5 is enabled, use nss (and stbc) to
 		 * calculate chains properly for this particular skb.
 		 */
@@ -609,132 +763,17 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 		status->chain_signal[2] = to_rssi(MT_PRXV_RCPI2, v1);
 		status->chain_signal[3] = to_rssi(MT_PRXV_RCPI3, v1);
 
-		nss = hweight8(mphy->antenna_mask);
-
 		/* RXD Group 5 - C-RXV.
 		 * Group 5 Not currently enabled for 7915 except in
 		 * monitor mode.
 		 *   See MT_DMA_DCR0_RXD_G5_EN
 		 */
-		if (rxd1 & MT_RXD1_NORMAL_GROUP_5) {
-			/* See RXV document ... */
-			u8 stbc = FIELD_GET(MT_CRXV_HT_STBC, v2);
-			u8 gi = FIELD_GET(MT_CRXV_HT_SHORT_GI, v2);
-			bool cck = false;
-
-			nss = 1;
-			rxd += 18;
-			if ((u8 *)rxd - skb->data >= skb->len) {
-				mib->rx_d_too_short++;
-				return -EINVAL;
-			}
-
-			idx = i = FIELD_GET(MT_PRXV_TX_RATE, v0);
-			mode = FIELD_GET(MT_CRXV_TX_MODE, v2);
-
-			switch (mode) {
-			case MT_PHY_TYPE_CCK:
-				cck = true;
-				fallthrough;
-			case MT_PHY_TYPE_OFDM:
-				i = mt76_get_rate(&dev->mt76, sband, i, cck);
-				break;
-			case MT_PHY_TYPE_HT_GF:
-			case MT_PHY_TYPE_HT:
-				status->encoding = RX_ENC_HT;
-				if (i > 31) {
-					mib->rx_d_bad_ht_rix++;
-					return -EINVAL;
-				}
-				nss = i / 8 + 1;
-				break;
-			case MT_PHY_TYPE_VHT:
-				status->nss =
-					FIELD_GET(MT_PRXV_NSTS, v0) + 1;
-				status->encoding = RX_ENC_VHT;
-				if (i > 9) {
-					mib->rx_d_bad_vht_rix++;
-					return -EINVAL;
-				}
-				nss = status->nss;
-				break;
-			case MT_PHY_TYPE_HE_MU:
-				status->flag |= RX_FLAG_RADIOTAP_HE_MU;
-				fallthrough;
-			case MT_PHY_TYPE_HE_SU:
-			case MT_PHY_TYPE_HE_EXT_SU:
-			case MT_PHY_TYPE_HE_TB:
-				status->nss =
-					FIELD_GET(MT_PRXV_NSTS, v0) + 1;
-				nss = status->nss;
-				status->encoding = RX_ENC_HE;
-				status->flag |= RX_FLAG_RADIOTAP_HE;
-				i &= GENMASK(3, 0);
-
-				if (gi <= NL80211_RATE_INFO_HE_GI_3_2)
-					status->he_gi = gi;
-
-				status->he_dcm = !!(idx & MT_PRXV_TX_DCM);
-				break;
-			default:
-				mib->rx_d_bad_mode++;
-				return -EINVAL;
-			}
-			status->rate_idx = i;
-
-			if (stbc) {
-				nss *= 2;
-				WARN_ON_ONCE(nss > 4);
-			}
-
-			if (stats) {
-				if (nss > 3)
-					stats->rx_nss[3]++;
-				else
-					stats->rx_nss[nss - 1]++;
-
-				stats->rx_mode[mode]++;
-			}
-
-			switch (FIELD_GET(MT_CRXV_FRAME_MODE, v2)) {
-			case IEEE80211_STA_RX_BW_20:
-				if (stats)
-					stats->rx_bw_20++;
-				break;
-			case IEEE80211_STA_RX_BW_40:
-				if (mode & MT_PHY_TYPE_HE_EXT_SU &&
-				    (idx & MT_PRXV_TX_ER_SU_106T)) {
-					status->bw = RATE_INFO_BW_HE_RU;
-					status->he_ru =
-						NL80211_RATE_INFO_HE_RU_ALLOC_106;
-					if (stats) {
-						stats->rx_bw_he_ru++;
-						stats->rx_ru_106++;
-					}
-				} else {
-					status->bw = RATE_INFO_BW_40;
-					if (stats)
-						stats->rx_bw_40++;
-				}
-				break;
-			case IEEE80211_STA_RX_BW_80:
-				status->bw = RATE_INFO_BW_80;
-				if (stats)
-					stats->rx_bw_80++;
-				break;
-			case IEEE80211_STA_RX_BW_160:
-				if (stats)
-					stats->rx_bw_160++;
-				status->bw = RATE_INFO_BW_160;
-				break;
-			default:
-				mib->rx_d_bad_bw++;
-				return -EINVAL;
-			}
-
-			status->enc_flags |= RX_ENC_FLAG_STBC_MASK * stbc;
-			if (mode < MT_PHY_TYPE_HE_SU && gi)
-				status->enc_flags |= RX_ENC_FLAG_SHORT_GI;
+		if (!is_mt7915(&dev->mt76) ||
+		    (is_mt7915(&dev->mt76) &&
+		     (rxd1 & MT_RXD1_NORMAL_GROUP_5))) {
+			ret = mt7915_mac_fill_rx_rate(dev, status, sband, rxv, &nss, mib, stats);
+			if (ret < 0)
+				return ret;
 		}
 
 		status->chains = 1;
