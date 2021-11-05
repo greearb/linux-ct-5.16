@@ -55,8 +55,20 @@ static const struct __reg mt7915_reg[] = {
 	[INT1_MASK_CSR]		= { MT_WFDMA_EXT_CSR_BASE, 0x8c },
 	[INT_MCU_CMD_SOURCE]	= { MT_WFDMA1_BASE, 0x1f0 },
 	[INT_MCU_CMD_EVENT]	= { MT_MCU_WFDMA1_BASE, 0x108 },
+	[TX_RING_CTRL_FWDL]	= { MT_WFDMA1_BASE, 0x640 },
+	[TX_RING_CTRL_WM]	= { MT_WFDMA1_BASE, 0x644 },
+	[TX_RING_CTRL_BAND0]	= { MT_WFDMA1_BASE, 0x648 },
+	[TX_RING_CTRL_BAND1]	= { MT_WFDMA1_BASE, 0x64c },
+	[TX_RING_CTRL_WA]	= { MT_WFDMA1_BASE, 0x650 },
+	[RX_RING_CTRL_WM]	= { MT_WFDMA1_BASE, 0x680 },
+	[RX_RING_CTRL_WA]	= { INVALID_BASE, INVALID_OFFSET },
+	[RX_RING_CTRL_STS0]	= { MT_WFDMA1_BASE, 0x684 },
+	[RX_RING_CTRL_STS1]	= { MT_WFDMA1_BASE, 0x688 },
+	[RX_RING_CTRL_BAND0]	= { MT_WFDMA0_BASE, 0x680 },
+	[RX_RING_CTRL_BAND1]	= { MT_WFDMA0_BASE, 0x684 },
 	[TX_RING_BASE]		= { MT_WFDMA1_BASE, 0x400 },
 	[RX_EVENT_RING_BASE]	= { MT_WFDMA1_BASE, 0x500 },
+	[RX_STS_RING_BASE]	= { MT_WFDMA1_BASE, 0x510 },
 	[RX_DATA_RING_BASE]	= { MT_WFDMA0_BASE, 0x500 },
 	[TMAC_CDTR]		= { INVALID_BASE, 0x090 },
 	[TMAC_ODTR]		= { INVALID_BASE, 0x094 },
@@ -144,8 +156,20 @@ static const struct __reg mt7916_reg[] = {
 	[INT1_MASK_CSR]		= { MT_WFDMA0_PCIE1_BASE, 0x204 },
 	[INT_MCU_CMD_SOURCE]	= { MT_WFDMA0_BASE, 0x1f0 },
 	[INT_MCU_CMD_EVENT]	= { MT_MCU_WFDMA0_BASE, 0x108 },
+	[TX_RING_CTRL_FWDL]	= { MT_WFDMA0_BASE, 0x640 },
+	[TX_RING_CTRL_WM]	= { MT_WFDMA0_BASE, 0x644 },
+	[TX_RING_CTRL_BAND0]	= { MT_WFDMA0_BASE, 0x648 },
+	[TX_RING_CTRL_BAND1]	= { MT_WFDMA0_BASE, 0x64c },
+	[TX_RING_CTRL_WA]	= { MT_WFDMA0_BASE, 0x650 },
+	[RX_RING_CTRL_WM]	= { MT_WFDMA0_BASE, 0x680 },
+	[RX_RING_CTRL_WA]	= { MT_WFDMA0_BASE, 0x684 },
+	[RX_RING_CTRL_STS0]	= { MT_WFDMA0_BASE, 0x688 },
+	[RX_RING_CTRL_STS1]	= { MT_WFDMA0_BASE, 0x68c },
+	[RX_RING_CTRL_BAND0]	= { MT_WFDMA0_BASE, 0x690 },
+	[RX_RING_CTRL_BAND1]	= { MT_WFDMA0_BASE, 0x694 },
 	[TX_RING_BASE]		= { MT_WFDMA0_BASE, 0x400 },
 	[RX_EVENT_RING_BASE]	= { MT_WFDMA0_BASE, 0x500 },
+	[RX_STS_RING_BASE]	= { MT_WFDMA0_BASE, 0x520 },
 	[RX_DATA_RING_BASE]	= { MT_WFDMA0_BASE, 0x540 },
 	[TMAC_CDTR]		= { INVALID_BASE, 0x0c8 },
 	[TMAC_ODTR]		= { INVALID_BASE, 0x0cc },
@@ -554,17 +578,20 @@ static void mt7915_rx_poll_complete(struct mt76_dev *mdev,
 	case MT_RXQ_MAIN:
 		rx_irq_mask = MT_INT_RX_DONE_DATA0;
 		break;
-	case MT_RXQ_EXT:
-		rx_irq_mask = MT_INT_RX_DONE_DATA1;
-		break;
 	case MT_RXQ_MCU:
 		rx_irq_mask = MT_INT_RX_DONE_WM;
 		break;
 	case MT_RXQ_MCU_WA:
 		rx_irq_mask = MT_INT_RX_DONE_WA;
 		break;
+	case MT_RXQ_EXT:
+		rx_irq_mask = MT_INT_RX_DONE_DATA1;
+		break;
 	case MT_RXQ_EXT_WA:
 		rx_irq_mask = MT_INT_RX_DONE_WA_EXT;
+		break;
+	case MT_RXQ_MAIN_WA:
+		rx_irq_mask = MT_INT_RX_DONE_WA_MAIN;
 		break;
 	default:
 		break;
@@ -617,6 +644,11 @@ static void mt7915_irq_tasklet(struct tasklet_struct *t)
 
 	if (intr & MT_INT_RX_DONE_WA)
 		napi_schedule(&dev->mt76.napi[MT_RXQ_MCU_WA]);
+
+	if (!is_mt7915(&dev->mt76)) {
+		if (intr & MT_INT_RX_DONE_WA_MAIN)
+			napi_schedule(&dev->mt76.napi[MT_RXQ_MAIN_WA]);
+	}
 
 	if (intr & MT_INT_RX_DONE_WA_EXT)
 		napi_schedule(&dev->mt76.napi[MT_RXQ_EXT_WA]);

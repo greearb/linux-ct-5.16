@@ -63,7 +63,8 @@ enum mt7915_rxq_id {
 	MT7915_RXQ_BAND1,
 	MT7915_RXQ_MCU_WM = 0,
 	MT7915_RXQ_MCU_WA,
-	MT7915_RXQ_MCU_WA_EXT,
+	MT7915_RXQ_WA_BAND0 = 0,
+	MT7915_RXQ_WA_BAND1,
 };
 
 struct mt7915_sta_key_conf {
