@@ -51,7 +51,7 @@ struct mt7915_dfs_pulse;
 struct mt7915_dfs_pattern;
 
 enum mt7915_txq_id {
-	MT7915_TXQ_FWDL = 16,
+	MT7915_TXQ_FWDL = 0,
 	MT7915_TXQ_MCU_WM,
 	MT7915_TXQ_BAND0,
 	MT7915_TXQ_BAND1,
@@ -321,6 +321,7 @@ struct mt7915_dev {
 	};
 
 	struct mt7915_hif *hif2;
+	const struct mt7915_reg_desc *reg;
 
 	const struct mt76_bus_ops *bus_ops;
 	struct tasklet_struct irq_tasklet;
@@ -458,7 +459,6 @@ int mt7915_mmio_probe(struct device *pdev,
 		      void __iomem *mem_base,
 		      u32 device_id,
 		      int irq, struct mt7915_hif *hif2);
-u32 mt7915_reg_map(struct mt7915_dev *dev, u32 addr);
 u64 __mt7915_get_tsf(struct ieee80211_hw *hw, struct mt7915_vif *mvif);
 int mt7915_register_device(struct mt7915_dev *dev);
 void mt7915_unregister_device(struct mt7915_dev *dev);

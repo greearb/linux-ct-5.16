@@ -1268,7 +1268,7 @@ void mt7915_get_et_stats(struct ieee80211_hw *hw,
 	struct mib_stats *mib = &phy->mib;
 	/* See mt7915_ampdu_stat_read_phy, etc */
 	bool ext_phy = phy != &dev->phy;
-	int i, n, q, ei = 0;
+	int i, n, ei = 0;
 
 	mutex_lock(&dev->mt76.mutex);
 

@@ -7,6 +7,7 @@
 
 int mt7915_init_tx_queues(struct mt7915_phy *phy, int idx, int n_desc)
 {
+	struct mt7915_dev *dev = phy->dev;
 	int i, err;
 
 	err = mt76_init_tx_queue(phy->mt76, 0, idx, n_desc, MT_TX_RING_BASE);
@@ -74,7 +75,7 @@ void mt7915_dma_prefetch(struct mt7915_dev *dev)
 {
 	__mt7915_dma_prefetch(dev, 0);
 	if (dev->hif2)
-		__mt7915_dma_prefetch(dev, MT_WFDMA1_PCIE1_BASE - MT_WFDMA1_BASE);
+		__mt7915_dma_prefetch(dev, MT_WFDMA0_PCIE1(0) - MT_WFDMA0(0));
 }
 
 int mt7915_dma_init(struct mt7915_dev *dev)
@@ -85,7 +86,7 @@ int mt7915_dma_init(struct mt7915_dev *dev)
 	mt76_dma_attach(&dev->mt76);
 
 	if (dev->hif2)
-		hif1_ofs = MT_WFDMA1_PCIE1_BASE - MT_WFDMA1_BASE;
+		hif1_ofs = MT_WFDMA0_PCIE1(0) - MT_WFDMA0(0);
 
 	/* configure global setting */
 	mt76_set(dev, MT_WFDMA1_GLO_CFG,

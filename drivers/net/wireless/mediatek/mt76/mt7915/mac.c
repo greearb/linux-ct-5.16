@@ -2038,7 +2038,7 @@ static void
 mt7915_dma_reset(struct mt7915_dev *dev)
 {
 	struct mt76_phy *mphy_ext = dev->mt76.phy2;
-	u32 hif1_ofs = MT_WFDMA1_PCIE1_BASE - MT_WFDMA1_BASE;
+	u32 hif1_ofs = MT_WFDMA0_PCIE1(0) - MT_WFDMA0(0);
 	int i;
 
 	mt76_clear(dev, MT_WFDMA0_GLO_CFG,
@@ -2198,10 +2198,10 @@ void mt7915_mac_update_stats(struct mt7915_phy *phy)
 	struct mt7915_dev *dev = phy->dev;
 	struct mib_stats *mib = &phy->mib;
 	bool ext_phy = phy != &dev->phy;
-	int i, q, aggr0, aggr1, cnt;
+	int i, aggr0, aggr1, cnt;
 
-	mib->fcs_err_cnt += mt76_get_field(dev, MT_MIB_SDR3(ext_phy),
-					   MT_MIB_SDR3_FCS_ERR_MASK);
+	cnt = mt76_rr(dev, MT_MIB_SDR3(ext_phy));
+	mib->fcs_err_cnt += __FIELD_GET(MIB_SDR3_FCS_ERR, cnt);
 
 	cnt = mt76_rr(dev, MT_MIB_SDR4(ext_phy));
 	mib->rx_fifo_full_cnt += FIELD_GET(MT_MIB_SDR4_RX_FIFO_FULL_MASK, cnt);
@@ -2229,10 +2229,10 @@ void mt7915_mac_update_stats(struct mt7915_phy *phy)
 	mib->tx_stop_q_empty_cnt += FIELD_GET(MT_MIB_SDR13_TX_STOP_Q_EMPTY_CNT_MASK, cnt);
 
 	cnt = mt76_rr(dev, MT_MIB_SDR14(ext_phy));
-	mib->tx_mpdu_attempts_cnt += FIELD_GET(MT_MIB_SDR14_TX_MPDU_ATTEMPTS_CNT_MASK, cnt);
+	mib->tx_mpdu_attempts_cnt += __FIELD_GET(MIB_MPDU_ATTEMPTS_CNT, cnt);
 
 	cnt = mt76_rr(dev, MT_MIB_SDR15(ext_phy));
-	mib->tx_mpdu_success_cnt += FIELD_GET(MT_MIB_SDR15_TX_MPDU_SUCCESS_CNT_MASK, cnt);
+	mib->tx_mpdu_success_cnt += __FIELD_GET(MIB_MPDU_SUCCESS_CNT, cnt);
 
 	cnt = mt76_rr(dev, MT_MIB_SDR22(ext_phy));
 	mib->rx_ampdu_cnt += cnt;
@@ -2241,7 +2241,7 @@ void mt7915_mac_update_stats(struct mt7915_phy *phy)
 	mib->rx_ampdu_bytes_cnt += cnt;
 
 	cnt = mt76_rr(dev, MT_MIB_SDR24(ext_phy));
-	mib->rx_ampdu_valid_subframe_cnt += FIELD_GET(MT_MIB_SDR24_RX_AMPDU_SF_CNT_MASK, cnt);
+	mib->rx_ampdu_valid_subframe_cnt += __FIELD_GET(MIB_AMPDU_SF_CNT, cnt);
 
 	cnt = mt76_rr(dev, MT_MIB_SDR25(ext_phy));
 	mib->rx_ampdu_valid_subframe_bytes_cnt += cnt;
@@ -2253,11 +2253,10 @@ void mt7915_mac_update_stats(struct mt7915_phy *phy)
 	mib->tx_rwp_need_cnt += FIELD_GET(MT_MIB_SDR28_TX_RWP_NEED_CNT_MASK, cnt);
 
 	cnt = mt76_rr(dev, MT_MIB_SDR29(ext_phy));
-	mib->rx_pfdrop_cnt += FIELD_GET(MT_MIB_SDR29_RX_PFDROP_CNT_MASK, cnt);
+	mib->rx_pfdrop_cnt += __FIELD_GET(MIB_PF_DROP_CNT, cnt);
 
-	cnt = mt76_rr(dev, MT_MIB_SDR30(ext_phy));
-	mib->rx_vec_queue_overflow_drop_cnt +=
-		FIELD_GET(MT_MIB_SDR30_RX_VEC_QUEUE_OVERFLOW_DROP_CNT_MASK, cnt);
+	cnt = mt76_rr(dev, MT_MIB_SDRVEC(ext_phy));
+	mib->rx_vec_queue_overflow_drop_cnt += __FIELD_GET(MIB_VEC_DROP_CNT, cnt);
 
 	cnt = mt76_rr(dev, MT_MIB_SDR31(ext_phy));
 	mib->rx_ba_cnt += cnt;
@@ -2265,10 +2264,11 @@ void mt7915_mac_update_stats(struct mt7915_phy *phy)
 	cnt = mt76_rr(dev, MT_MIB_SDR32(ext_phy));
 	mib->tx_pkt_ebf_cnt += FIELD_GET(MT_MIB_SDR32_TX_PKT_EBF_CNT_MASK, cnt);
 
-	cnt = mt76_rr(dev, MT_MIB_SDR33(ext_phy));
-	mib->tx_pkt_ibf_cnt += FIELD_GET(MT_MIB_SDR33_TX_PKT_IBF_CNT_MASK, cnt);
+	if (is_mt7915(&dev->mt76))
+		cnt = mt76_rr(dev, MT_MIB_SDR33(ext_phy));
+	mib->tx_pkt_ibf_cnt += __FIELD_GET(MIB_BF_TX_CNT, cnt);
 
-	cnt = mt76_rr(dev, MT_MIB_SDR34(ext_phy));
+	cnt = mt76_rr(dev, MT_MIB_SDRMUBF(ext_phy));
 	mib->tx_bf_cnt += FIELD_GET(MT_MIB_MU_BF_TX_CNT, cnt);
 
 	cnt = mt76_rr(dev, MT_MIB_SDR38(ext_phy));
