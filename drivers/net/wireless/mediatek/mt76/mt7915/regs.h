@@ -152,7 +152,7 @@ enum reg_rev {
 	PLE_PG_HIF_GROUP,
 	PLE_HIF_PG_INFO,
 	AC_OFFSET,
-	__MT_REG_DIFF_MAX,
+	__MT_REG_MAX,
 };
 
 enum mask_rev {
@@ -167,7 +167,7 @@ enum mask_rev {
 	MIB_PF_DROP_CNT,
 	MIB_VEC_DROP_CNT,
 	MIB_BF_TX_CNT,
-	__MT_MASK_DIF_MAX,
+	__MT_MASK_MAX,
 };
 
 enum bit_rev {
@@ -185,7 +185,7 @@ enum bit_rev {
 	RX_MCU_TO_HOST,
 	MIB_MB_SDR,
 	LPON_TCR,
-	__MT_BIT_DIF_MAX,
+	__MT_BIT_MAX,
 };
 
 #define __REG_MAP(_dev, id, ofs)	((_dev)->reg->base_rev[(id)] + (ofs))
@@ -851,6 +851,7 @@ enum bit_rev {
 #define MT_HW_BOUND			0x70010020
 #define MT_HW_CHIPID			0x70010200
 #define MT_HW_REV			0x70010204
+#define MT_WF_SUBSYS_RST		0x70002600
 
 /* PCIE MAC */
 #define MT_PCIE_MAC(ofs)		__REG_MAP(dev, MT_PCIE_MAC_BASE, (ofs))
