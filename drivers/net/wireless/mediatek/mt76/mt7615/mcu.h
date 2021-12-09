@@ -76,35 +76,6 @@ struct mt7615_uni_txd {
 	u8 reserved2[4];
 } __packed __aligned(4);
 
-/* event table */
-enum {
-	MCU_EVENT_TARGET_ADDRESS_LEN = 0x01,
-	MCU_EVENT_FW_START = 0x01,
-	MCU_EVENT_GENERIC = 0x01,
-	MCU_EVENT_ACCESS_REG = 0x02,
-	MCU_EVENT_MT_PATCH_SEM = 0x04,
-	MCU_EVENT_REG_ACCESS = 0x05,
-	MCU_EVENT_SCAN_DONE = 0x0d,
-	MCU_EVENT_ROC = 0x10,
-	MCU_EVENT_BSS_ABSENCE  = 0x11,
-	MCU_EVENT_BSS_BEACON_LOSS = 0x13,
-	MCU_EVENT_CH_PRIVILEGE = 0x18,
-	MCU_EVENT_SCHED_SCAN_DONE = 0x23,
-	MCU_EVENT_EXT = 0xed,
-	MCU_EVENT_RESTART_DL = 0xef,
-	MCU_EVENT_COREDUMP = 0xf0,
-};
-
-/* ext event table */
-enum {
-	MCU_EXT_EVENT_PS_SYNC = 0x5,
-	MCU_EXT_EVENT_FW_LOG_2_HOST = 0x13,
-	MCU_EXT_EVENT_THERMAL_PROTECT = 0x22,
-	MCU_EXT_EVENT_ASSERT_DUMP = 0x23,
-	MCU_EXT_EVENT_RDD_REPORT = 0x3a,
-	MCU_EXT_EVENT_CSA_NOTIFY = 0x4f,
-};
-
 enum {
 	MT_SKU_CCK_1_2,
 	MT_SKU_CCK_55_11,
@@ -234,20 +205,6 @@ struct mt7615_mcu_rdd_report {
 #define MCU_PKT_ID		0xa0
 
 enum {
-	MCU_Q_QUERY,
-	MCU_Q_SET,
-	MCU_Q_RESERVED,
-	MCU_Q_NA
-};
-
-enum {
-	MCU_S2D_H2N,
-	MCU_S2D_C2N,
-	MCU_S2D_H2C,
-	MCU_S2D_H2CN
-};
-
-enum {
 	MCU_ATE_SET_FREQ_OFFSET = 0xa,
 	MCU_ATE_SET_TX_POWER_CONTROL = 0x15,
 };
@@ -279,6 +236,11 @@ struct mt7615_roc_tlv {
 	__le32 max_interval;	/* ms */
 	u8 rsv1[8];
 } __packed;
+
+enum {
+	FW_STATE_PWR_ON = 1,
+	FW_STATE_N9_RDY = 2,
+}
 
 enum {
 	PATCH_NOT_DL_SEM_FAIL,
