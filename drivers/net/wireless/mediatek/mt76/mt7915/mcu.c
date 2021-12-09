@@ -183,8 +183,9 @@ mt7915_get_phy_mode(struct ieee80211_vif *vif, struct ieee80211_sta *sta)
 
 		if (he_cap && he_cap->has_he)
 			mode |= PHY_MODE_AX_24G;
-	} else if (band == NL80211_BAND_5GHZ) {
-		mode |= PHY_MODE_A;
+	} else {
+		if (band == NL80211_BAND_5GHZ)
+			mode |= PHY_MODE_A;
 
 		if (ht_cap->ht_supported)
 			mode |= PHY_MODE_AN;
@@ -192,8 +193,12 @@ mt7915_get_phy_mode(struct ieee80211_vif *vif, struct ieee80211_sta *sta)
 		if (vht_cap->vht_supported)
 			mode |= PHY_MODE_AC;
 
-		if (he_cap && he_cap->has_he)
+		if (he_cap && he_cap->has_he) {
 			mode |= PHY_MODE_AX_5G;
+
+			if (band == NL80211_BAND_6GHZ)
+				mode |= PHY_MODE_AX_6G;
+		}
 	}
 
 	return mode;
@@ -3648,6 +3653,11 @@ int mt7915_mcu_set_radar_th(struct mt7915_dev *dev, int index,
 
 int mt7915_mcu_set_chan_info(struct mt7915_phy *phy, int cmd)
 {
+	static const u8 ch_band[] = {
+		[NL80211_BAND_2GHZ] = 0,
+		[NL80211_BAND_5GHZ] = 1,
+		[NL80211_BAND_6GHZ] = 2,
+	};
 	struct mt7915_dev *dev = phy->dev;
 	struct cfg80211_chan_def *chandef = &phy->mt76->chandef;
 	int freq1 = chandef->center_freq1;
@@ -3659,7 +3669,7 @@ int mt7915_mcu_set_chan_info(struct mt7915_phy *phy, int cmd)
 		.tx_streams_num = hweight8(phy->mt76->antenna_mask),
 		.rx_streams = phy->mt76->antenna_mask,
 		.band_idx = ext_phy,
-		.channel_band = chandef->chan->band,
+		.channel_band = ch_band[chandef->chan->band],
 	};
 
 #ifdef CONFIG_NL80211_TESTMODE
@@ -4321,6 +4331,8 @@ int mt7915_mcu_get_rx_rate(struct mt7915_phy *phy, struct ieee80211_vif *vif,
 	case MT_PHY_TYPE_OFDM:
 		if (mphy->chandef.chan->band == NL80211_BAND_5GHZ)
 			sband = &mphy->sband_5g.sband;
+		else if (mphy->chandef.chan->band == NL80211_BAND_6GHZ)
+			sband = &mphy->sband_6g.sband;
 		else
 			sband = &mphy->sband_2g.sband;
 

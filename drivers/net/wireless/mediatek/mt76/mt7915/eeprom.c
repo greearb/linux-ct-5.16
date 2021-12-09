@@ -115,20 +115,36 @@ static void mt7915_eeprom_parse_band_config(struct mt7915_phy *phy)
 
 	val = eeprom[MT_EE_WIFI_CONF + ext_phy];
 	val = FIELD_GET(MT_EE_WIFI_CONF0_BAND_SEL, val);
-	if (val == MT_EE_BAND_SEL_DEFAULT && dev->dbdc_support)
-		val = ext_phy ? MT_EE_BAND_SEL_5GHZ : MT_EE_BAND_SEL_2GHZ;
 
-	switch (val) {
-	case MT_EE_BAND_SEL_5GHZ:
-		phy->mt76->cap.has_5ghz = true;
-		break;
-	case MT_EE_BAND_SEL_2GHZ:
-		phy->mt76->cap.has_2ghz = true;
-		break;
-	default:
-		phy->mt76->cap.has_2ghz = true;
-		phy->mt76->cap.has_5ghz = true;
-		break;
+	if (is_mt7915(&dev->mt76)) {
+		switch (val) {
+		case MT_EE_BAND_SEL_5GHZ:
+			phy->mt76->cap.has_5ghz = true;
+			break;
+		case MT_EE_BAND_SEL_2GHZ:
+			phy->mt76->cap.has_2ghz = true;
+			break;
+		default:
+			phy->mt76->cap.has_2ghz = true;
+			phy->mt76->cap.has_5ghz = true;
+			break;
+		}
+	} else {
+		switch (val) {
+		case MT_EE_V2_BAND_SEL_5GHZ:
+			phy->mt76->cap.has_5ghz = true;
+			break;
+		case MT_EE_V2_BAND_SEL_6GHZ:
+			phy->mt76->cap.has_6ghz = true;
+			break;
+		case MT_EE_V2_BAND_SEL_5GHZ_6GHZ:
+			phy->mt76->cap.has_5ghz = true;
+			phy->mt76->cap.has_6ghz = true;
+			break;
+		default:
+			phy->mt76->cap.has_2ghz = true;
+			break;
+		}
 	}
 }
 

@@ -284,7 +284,7 @@ struct mt7915_phy {
 	struct mt76_phy *mt76;
 	struct mt7915_dev *dev;
 
-	struct ieee80211_sband_iftype_data iftype[2][NUM_NL80211_IFTYPES];
+	struct ieee80211_sband_iftype_data iftype[4][NUM_NL80211_IFTYPES];
 
 	struct ieee80211_vif *monitor_vif;
 
