@@ -1145,10 +1145,8 @@ int mt76_connac_mcu_sta_ba(struct mt76_dev *dev, struct mt76_vif *mvif,
 }
 EXPORT_SYMBOL_GPL(mt76_connac_mcu_sta_ba);
 
-static u8
-mt76_connac_get_phy_mode(struct mt76_phy *phy, struct ieee80211_vif *vif,
-			 enum nl80211_band band,
-			 struct ieee80211_sta *sta)
+u8 mt76_connac_get_phy_mode(struct mt76_phy *phy, struct ieee80211_vif *vif,
+			    enum nl80211_band band, struct ieee80211_sta *sta)
 {
 	struct mt76_dev *dev = phy->dev;
 	const struct ieee80211_sta_he_cap *he_cap;
@@ -1156,7 +1154,7 @@ mt76_connac_get_phy_mode(struct mt76_phy *phy, struct ieee80211_vif *vif,
 	struct ieee80211_sta_ht_cap *ht_cap;
 	u8 mode = 0;
 
-	if (!is_mt7921(dev))
+	if (!is_mt7921(dev) && !is_mt7915(dev))
 		return 0x38;
 
 	if (sta) {
@@ -1189,14 +1187,20 @@ mt76_connac_get_phy_mode(struct mt76_phy *phy, struct ieee80211_vif *vif,
 		if (vht_cap->vht_supported)
 			mode |= PHY_MODE_AC;
 
-		if (he_cap && he_cap->has_he && band == NL80211_BAND_5GHZ)
-			mode |= PHY_MODE_AX_5G;
+		if (he_cap && he_cap->has_he) {
+			if (band == NL80211_BAND_5GHZ)
+				mode |= PHY_MODE_AX_5G;
+
+			if (band == NL80211_BAND_6GHZ)
+				mode |= PHY_MODE_AX_6G;
+		}
 	}
 
 	return mode;
 }
+EXPORT_SYMBOL_GPL(mt76_connac_get_phy_mode);
 
-static const struct ieee80211_sta_he_cap *
+const struct ieee80211_sta_he_cap *
 mt76_connac_get_he_phy_cap(struct mt76_phy *phy, struct ieee80211_vif *vif)
 {
 	enum nl80211_band band = phy->chandef.chan->band;
@@ -1206,6 +1210,7 @@ mt76_connac_get_he_phy_cap(struct mt76_phy *phy, struct ieee80211_vif *vif)
 
 	return ieee80211_get_he_iftype_cap(sband, vif->type);
 }
+EXPORT_SYMBOL_GPL(mt76_connac_get_he_phy_cap);
 
 #define DEFAULT_HE_PE_DURATION		4
 #define DEFAULT_HE_DURATION_RTS_THRES	1023
