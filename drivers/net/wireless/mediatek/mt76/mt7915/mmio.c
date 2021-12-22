@@ -665,7 +665,7 @@ static void mt7915_irq_tasklet(struct tasklet_struct *t)
 	}
 }
 
-static irqreturn_t mt7915_irq_handler(int irq, void *dev_instance)
+irqreturn_t mt7915_irq_handler(int irq, void *dev_instance)
 {
 	struct mt7915_dev *dev = dev_instance;
 
@@ -681,10 +681,8 @@ static irqreturn_t mt7915_irq_handler(int irq, void *dev_instance)
 	return IRQ_HANDLED;
 }
 
-int mt7915_mmio_probe(struct device *pdev,
-		      void __iomem *mem_base,
-		      u32 device_id,
-		      int irq, struct mt7915_hif *hif2)
+struct mt7915_dev *mt7915_mmio_probe(struct device *pdev,
+				     void __iomem *mem_base, u32 device_id)
 {
 	static const struct mt76_driver_ops drv_ops = {
 		/* txwi_size = txd size + txp size */
@@ -697,6 +695,7 @@ int mt7915_mmio_probe(struct device *pdev,
 		.tx_prepare_skb = mt7915_tx_prepare_skb,
 		.tx_complete_skb = mt7915_tx_complete_skb,
 		.rx_skb = mt7915_queue_rx_skb,
+		.rx_check = mt7915_rx_check,
 		.rx_poll_complete = mt7915_rx_poll_complete,
 		.sta_ps = mt7915_sta_ps,
 		.sta_add = mt7915_mac_sta_add,
@@ -710,11 +709,11 @@ int mt7915_mmio_probe(struct device *pdev,
 
 	ops = devm_kmemdup(pdev, &mt7915_ops, sizeof(mt7915_ops), GFP_KERNEL);
 	if (!ops)
-		return -ENOMEM;
+		return ERR_PTR(-ENOMEM);
 
 	mdev = mt76_alloc_device(pdev, sizeof(*dev), ops, &drv_ops);
 	if (!mdev)
-		return -ENOMEM;
+		return ERR_PTR(-ENOMEM);
 
 	dev = container_of(mdev, struct mt7915_dev, mt76);
 
@@ -725,47 +724,13 @@ int mt7915_mmio_probe(struct device *pdev,
 	tasklet_setup(&dev->irq_tasklet, mt7915_irq_tasklet);
 
 	mt76_wr(dev, MT_INT_MASK_CSR, 0);
-	/* master switch of PCIe tnterrupt enable */
-	if (dev_is_pci(pdev))
-		mt76_wr(dev, MT_PCIE_MAC_INT_ENABLE, 0xff);
 
-	ret = devm_request_irq(mdev->dev, irq, mt7915_irq_handler,
-			       IRQF_SHARED, KBUILD_MODNAME, dev);
-	if (ret)
-		goto error;
+	return dev;
 
-	if (hif2) {
-		dev->hif2 = hif2;
-
-		mt76_wr(dev, MT_INT1_MASK_CSR, 0);
-		/* master switch of PCIe tnterrupt enable */
-		if (dev_is_pci(pdev))
-			mt76_wr(dev, MT_PCIE1_MAC_INT_ENABLE, 0xff);
-
-		ret = devm_request_irq(mdev->dev, dev->hif2->irq,
-				       mt7915_irq_handler, IRQF_SHARED,
-				       KBUILD_MODNAME "-hif", dev);
-		if (ret) {
-			put_device(dev->hif2->dev);
-			goto free_irq;
-		}
-	}
-
-	ret = mt7915_register_device(dev);
-	if (ret)
-		goto free_hif2_irq;
-
-	return 0;
-
-free_hif2_irq:
-	if (dev->hif2)
-		devm_free_irq(mdev->dev, dev->hif2->irq, dev);
-free_irq:
-	devm_free_irq(mdev->dev, irq, dev);
 error:
 	mt76_free_device(&dev->mt76);
 
-	return ret;
+	return ERR_PTR(ret);
 }
 
 static int __init mt7915_init(void)
