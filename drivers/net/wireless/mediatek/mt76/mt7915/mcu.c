@@ -979,40 +979,7 @@ mt7915_mcu_sta_he_tlv(struct sk_buff *skb, struct ieee80211_sta *sta,
 	memcpy(&msta->last_mcu.sta_rec_he, he, sizeof(*he));
 }
 
-static void
-mt7915_mcu_sta_uapsd_tlv(struct sk_buff *skb, struct ieee80211_sta *sta,
-			 struct ieee80211_vif *vif)
-{
-	struct sta_rec_uapsd *uapsd;
-	struct tlv *tlv;
-	struct mt7915_sta *msta = (struct mt7915_sta *)sta->drv_priv;
-
-	if (vif->type != NL80211_IFTYPE_AP || !sta->wme)
-		return;
-
-	tlv = mt76_connac_mcu_add_tlv(skb, STA_REC_APPS, sizeof(*uapsd));
-	uapsd = (struct sta_rec_uapsd *)tlv;
-
-	if (sta->uapsd_queues & IEEE80211_WMM_IE_STA_QOSINFO_AC_VO) {
-		uapsd->dac_map |= BIT(3);
-		uapsd->tac_map |= BIT(3);
-	}
-	if (sta->uapsd_queues & IEEE80211_WMM_IE_STA_QOSINFO_AC_VI) {
-		uapsd->dac_map |= BIT(2);
-		uapsd->tac_map |= BIT(2);
-	}
-	if (sta->uapsd_queues & IEEE80211_WMM_IE_STA_QOSINFO_AC_BE) {
-		uapsd->dac_map |= BIT(1);
-		uapsd->tac_map |= BIT(1);
-	}
-	if (sta->uapsd_queues & IEEE80211_WMM_IE_STA_QOSINFO_AC_BK) {
-		uapsd->dac_map |= BIT(0);
-		uapsd->tac_map |= BIT(0);
-	}
-	uapsd->max_sp = sta->max_sp;
-
-	memcpy(&msta->last_mcu.sta_rec_uapsd, uapsd, sizeof(*uapsd));
-}
+// TODO-BEN:	memcpy(&msta->last_mcu.sta_rec_uapsd, uapsd, sizeof(*uapsd));
 
 static void
 mt7915_mcu_sta_muru_tlv(struct sk_buff *skb, struct ieee80211_sta *sta,
@@ -1946,7 +1913,7 @@ int mt7915_mcu_add_sta(struct mt7915_dev *dev, struct ieee80211_vif *vif,
 		/* starec vht */
 		mt7915_mcu_sta_vht_tlv(skb, sta, msta);
 		/* starec uapsd */
-		mt7915_mcu_sta_uapsd_tlv(skb, sta, vif);
+		mt76_connac_mcu_sta_uapsd(skb, vif, sta);
 	}
 
 	ret = mt7915_mcu_sta_wtbl_tlv(dev, skb, vif, sta);
