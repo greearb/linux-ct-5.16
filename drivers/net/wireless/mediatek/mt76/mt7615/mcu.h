@@ -239,26 +239,6 @@ struct mt7615_roc_tlv {
 
 enum {
 	FW_STATE_PWR_ON = 1,
-	FW_STATE_N9_RDY = 2,
-}
-
-enum {
-	PATCH_NOT_DL_SEM_FAIL,
-	PATCH_IS_DL,
-	PATCH_NOT_DL_SEM_SUCCESS,
-	PATCH_REL_SEM_SUCCESS
-};
-
-enum {
-	FW_STATE_INITIAL,
-	FW_STATE_FW_DOWNLOAD,
-	FW_STATE_NORMAL_OPERATION,
-	FW_STATE_NORMAL_TRX,
-	FW_STATE_CR4_RDY          = 7
-};
-
-enum {
-	FW_STATE_PWR_ON = 1,
 	FW_STATE_N9_RDY,
 };
 
@@ -272,75 +252,6 @@ enum {
 	DBDC_TYPE_BF,
 	DBDC_TYPE_PTA,
 	__DBDC_TYPE_MAX,
-};
-
-struct bss_info_omac {
-	__le16 tag;
-	__le16 len;
-	u8 hw_bss_idx;
-	u8 omac_idx;
-	u8 band_idx;
-	u8 rsv0;
-	__le32 conn_type;
-	u32 rsv1;
-} __packed;
-
-struct bss_info_basic {
-	__le16 tag;
-	__le16 len;
-	__le32 network_type;
-	u8 active;
-	u8 rsv0;
-	__le16 bcn_interval;
-	u8 bssid[ETH_ALEN];
-	u8 wmm_idx;
-	u8 dtim_period;
-	u8 bmc_tx_wlan_idx;
-	u8 cipher; /* not used */
-	u8 phymode; /* not used */
-	u8 rsv1[5];
-} __packed;
-
-struct bss_info_rf_ch {
-	__le16 tag;
-	__le16 len;
-	u8 pri_ch;
-	u8 central_ch0;
-	u8 central_ch1;
-	u8 bw;
-} __packed;
-
-struct bss_info_ext_bss {
-	__le16 tag;
-	__le16 len;
-	__le32 mbss_tsf_offset; /* in unit of us */
-	u8 rsv[8];
-} __packed;
-
-enum {
-	BSS_INFO_OMAC,
-	BSS_INFO_BASIC,
-	BSS_INFO_RF_CH, /* optional, for BT/LTE coex */
-	BSS_INFO_PM, /* sta only */
-	BSS_INFO_UAPSD, /* sta only */
-	BSS_INFO_ROAM_DETECTION, /* obsoleted */
-	BSS_INFO_LQ_RM, /* obsoleted */
-	BSS_INFO_EXT_BSS,
-	BSS_INFO_BMC_INFO, /* for bmc rate control in CR4 */
-	BSS_INFO_SYNC_MODE, /* obsoleted */
-	BSS_INFO_RA,
-	BSS_INFO_MAX_NUM
-};
-
-enum {
-	CH_SWITCH_NORMAL,
-	CH_SWITCH_SCAN = 3,
-	CH_SWITCH_MCC,
-	CH_SWITCH_DFS,
-	CH_SWITCH_BACKGROUND_SCAN_START,
-	CH_SWITCH_BACKGROUND_SCAN_RUNNING,
-	CH_SWITCH_BACKGROUND_SCAN_STOP,
-	CH_SWITCH_SCAN_BYPASS_DPD
 };
 
 #endif

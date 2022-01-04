@@ -859,6 +859,8 @@ enum bit_rev {
 #define MT_PCIE1_MAC(ofs)		__REG_MAP(dev, MT_PCIE1_MAC_BASE, (ofs))
 #define MT_PCIE1_MAC_INT_ENABLE		MT_PCIE1_MAC(0x188)
 
+#define MT_PCIE1_MAC_INT_ENABLE_MT7916	0x74090188
+
 /* PP TOP */
 #define MT_WF_PP_TOP_BASE		0x820cc000
 #define MT_WF_PP_TOP(ofs)		(MT_WF_PP_TOP_BASE + (ofs))
