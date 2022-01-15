@@ -179,6 +179,7 @@ struct mt7921_phy {
 
 	s16 coverage_class;
 	u8 slottime;
+	u8 is_monitor_mode; /* are we in monitor mode or not ? */
 
 	u32 rx_ampdu_ts;
 	u32 ampdu_ref;
@@ -224,6 +225,10 @@ struct mt7921_dev {
 	 * creation by firmware, so may be a performance drag.
 	 */
 	bool txs_for_no_skb_enabled;
+	/* Should we enable group-5 rx descriptor logic?  This may decrease RX
+	 * throughput, but will give per skb rx rate information..
+	 */
+	bool rx_group_5_enable;
 
 	struct list_head sta_poll_list;
 	spinlock_t sta_poll_lock;

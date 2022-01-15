@@ -674,6 +674,38 @@ mt7921_txs_for_no_skb_get(void *data, u64 *val)
 DEFINE_DEBUGFS_ATTRIBUTE(fops_txs_for_no_skb, mt7921_txs_for_no_skb_get,
 			 mt7921_txs_for_no_skb_set, "%lld\n");
 
+static int
+mt7921_rx_group_5_enable_set(void *data, u64 val)
+{
+	struct mt7921_dev *dev = data;
+
+	mutex_lock(&dev->mt76.mutex);
+
+	dev->rx_group_5_enable = !!val;
+
+	/* Enabled if we requested enabled OR if monitor mode is enabled. */
+	mt76_rmw_field(dev, MT_DMA_DCR0(0), MT_DMA_DCR0_RXD_G5_EN,
+		       dev->phy.is_monitor_mode || dev->rx_group_5_enable);
+	mt76_testmode_reset(dev->phy.mt76, true);
+
+	mutex_unlock(&dev->mt76.mutex);
+
+	return 0;
+}
+
+static int
+mt7921_rx_group_5_enable_get(void *data, u64 *val)
+{
+	struct mt7921_dev *dev = data;
+
+	*val = dev->rx_group_5_enable;
+
+	return 0;
+}
+
+DEFINE_DEBUGFS_ATTRIBUTE(fops_rx_group_5_enable, mt7921_rx_group_5_enable_get,
+			 mt7921_rx_group_5_enable_set, "%lld\n");
+
 int mt7921_init_debugfs(struct mt7921_dev *dev)
 {
 	struct dentry *dir;
@@ -703,5 +735,6 @@ int mt7921_init_debugfs(struct mt7921_dev *dev)
 	debugfs_create_file("set_rate_override", 0600, dir,
 			    dev, &fops_set_rate_override);
 	debugfs_create_file("force_txs", 0600, dir, dev, &fops_txs_for_no_skb);
+	debugfs_create_file("rx_group_5_enable", 0600, dir, dev, &fops_rx_group_5_enable);
 	return 0;
 }
