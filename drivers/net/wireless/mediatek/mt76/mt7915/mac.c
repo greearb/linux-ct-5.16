@@ -445,10 +445,23 @@ mt7915_mac_fill_rx_rate(struct mt7915_dev *dev,
 	case MT_PHY_TYPE_OFDM:
 		i = mt76_get_rate(&dev->mt76, sband, i, cck);
 		legacy = sband->bitrates[i].bitrate;
+		if (stats) {
+			if (unlikely(i > 11))
+				stats->rx_rate_idx[11]++;
+			else
+				stats->rx_rate_idx[i]++;
+		}
 		break;
 	case MT_PHY_TYPE_HT_GF:
 	case MT_PHY_TYPE_HT:
 		status->encoding = RX_ENC_HT;
+		if (stats) {
+			int rix = i % 8;
+			if (unlikely(rix > 11))
+				stats->rx_rate_idx[11]++;
+			else
+				stats->rx_rate_idx[rix]++;
+		}
 		if (i > 31)
 			return -EINVAL;
 
@@ -459,6 +472,12 @@ mt7915_mac_fill_rx_rate(struct mt7915_dev *dev,
 	case MT_PHY_TYPE_VHT:
 		status->nss = *nss;
 		status->encoding = RX_ENC_VHT;
+		if (stats) {
+			if (unlikely(i > 11))
+				stats->rx_rate_idx[11]++;
+			else
+				stats->rx_rate_idx[i]++;
+		}
 		if (i > 9)
 			return -EINVAL;
 
@@ -481,6 +500,12 @@ mt7915_mac_fill_rx_rate(struct mt7915_dev *dev,
 
 		status->he_dcm = dcm;
 		flags |= RATE_INFO_FLAGS_HE_MCS;
+		if (stats) {
+			if (unlikely(i > 11))
+				stats->rx_rate_idx[11]++;
+			else
+				stats->rx_rate_idx[i]++;
+		}
 		break;
 	default:
 		mib->rx_d_bad_mode++;
