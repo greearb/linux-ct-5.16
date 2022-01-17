@@ -227,6 +227,10 @@ struct mt7921_dev {
 	 * creation by firmware, so may be a performance drag.
 	 */
 	bool txs_for_no_skb_enabled;
+	/* Should we request TXS for all skbs (and properly map to skb)
+	 * Very likely this reduces performance.
+	 */
+	bool txs_for_all_enabled;
 	/* Should we enable group-5 rx descriptor logic?  This may decrease RX
 	 * throughput, but will give per skb rx rate information..
 	 */
