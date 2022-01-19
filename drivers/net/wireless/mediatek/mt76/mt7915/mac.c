@@ -883,13 +883,21 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 		status->chains = 1;
 		status->signal = status->chain_signal[0];
 
-		for (i = 1; i < nss; i++) {
+		for (i = 1; i < nss; i++)
 			status->chains |= BIT(i);
 
-			/* TODO:  Use db sum logic instead of max. */
-			status->signal = max(status->signal,
-					     status->chain_signal[i]);
-		}
+		if (status->nss == 2)
+			status->signal = mt76_sum_sigs_2(status->chain_signal[0],
+							 status->chain_signal[1]);
+		else if (status->nss == 3)
+			status->signal = mt76_sum_sigs_2(mt76_sum_sigs_2(status->chain_signal[0],
+									 status->chain_signal[1]),
+							 status->chain_signal[2]);
+		else if (status->nss == 4)
+			status->signal = mt76_sum_sigs_2(mt76_sum_sigs_2(status->chain_signal[0],
+									 status->chain_signal[1]),
+							 mt76_sum_sigs_2(status->chain_signal[2],
+									 status->chain_signal[3]));
 	}
 
 	amsdu_info = FIELD_GET(MT_RXD4_NORMAL_PAYLOAD_FORMAT, rxd4);
