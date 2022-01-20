@@ -470,7 +470,6 @@ mt7915_mac_fill_rx_rate(struct mt7915_dev *dev,
 			flags |= RATE_INFO_FLAGS_SHORT_GI;
 		break;
 	case MT_PHY_TYPE_VHT:
-		status->nss = *nss;
 		status->encoding = RX_ENC_VHT;
 		if (stats) {
 			if (unlikely(i > 11))
@@ -491,7 +490,6 @@ mt7915_mac_fill_rx_rate(struct mt7915_dev *dev,
 	case MT_PHY_TYPE_HE_SU:
 	case MT_PHY_TYPE_HE_EXT_SU:
 	case MT_PHY_TYPE_HE_TB:
-		status->nss = *nss;
 		status->encoding = RX_ENC_HE;
 		i &= GENMASK(3, 0);
 
@@ -553,6 +551,7 @@ mt7915_mac_fill_rx_rate(struct mt7915_dev *dev,
 	if (mode < MT_PHY_TYPE_HE_SU && gi)
 		status->enc_flags |= RX_ENC_FLAG_SHORT_GI;
 
+	status->nss = *nss;
 	if (stbc) {
 		*nss *= 2;
 		WARN_ON_ONCE(*nss > 4);
@@ -878,6 +877,9 @@ mt7915_mac_fill_rx(struct mt7915_dev *dev, struct sk_buff *skb)
 			ret = mt7915_mac_fill_rx_rate(dev, status, sband, rxv, &nss, mib, stats);
 			if (ret < 0)
 				return ret;
+		}
+		else {
+			status->nss = nss;
 		}
 
 		status->chains = 1;
