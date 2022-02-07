@@ -1124,6 +1124,7 @@ struct cfg80211_beacon_data {
 	const u8 *civicloc;
 	struct cfg80211_mbssid_elems *mbssid_ies;
 	s8 ftm_responder;
+	u8 he_ofdma_disable; /* should we try to disable ofdma? */
 
 	size_t head_len, tail_len;
 	size_t beacon_ies_len;

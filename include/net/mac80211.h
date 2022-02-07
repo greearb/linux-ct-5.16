@@ -653,6 +653,7 @@ struct ieee80211_bss_conf {
 	/* association related data */
 	bool assoc, ibss_joined;
 	bool ibss_creator;
+	bool he_ofdma_disable; /* Ask driver to disable OFDMA */
 	u16 aid;
 	/* erp related data */
 	bool use_cts_prot;

@@ -865,7 +865,8 @@ mt7915_mcu_sta_he_tlv(struct sk_buff *skb, struct ieee80211_sta *sta,
 	    IEEE80211_HE_PHY_CAP6_TRIG_CQI_FB)
 		cap |= STA_REC_HE_CAP_TRIG_CQI_FK;
 
-	if (!(sta->mgd_flags & IEEE80211_STA_DISABLE_OFDMA)) {
+	if (vif->bss_conf.he_ofdma_disable ||
+	    !(sta->mgd_flags & IEEE80211_STA_DISABLE_OFDMA)) {
 		if (elem->phy_cap_info[6] &
 		    IEEE80211_HE_PHY_CAP6_PARTIAL_BW_EXT_RANGE)
 			cap |= STA_REC_HE_CAP_PARTIAL_BW_EXT_RANGE;
@@ -891,7 +892,8 @@ mt7915_mcu_sta_he_tlv(struct sk_buff *skb, struct ieee80211_sta *sta,
 	    IEEE80211_HE_PHY_CAP8_HE_ER_SU_1XLTF_AND_08_US_GI)
 		cap |= STA_REC_HE_CAP_ER_SU_PPDU_1LTF_8US_GI;
 
-	if (!(sta->mgd_flags & IEEE80211_STA_DISABLE_OFDMA)) {
+	if (vif->bss_conf.he_ofdma_disable ||
+	    !(sta->mgd_flags & IEEE80211_STA_DISABLE_OFDMA)) {
 		if (elem->phy_cap_info[9] &
 		    IEEE80211_HE_PHY_CAP9_TX_1024_QAM_LESS_THAN_242_TONE_RU)
 			cap |= STA_REC_HE_CAP_TX_1024QAM_UNDER_RU242;
@@ -983,7 +985,8 @@ mt7915_mcu_sta_muru_tlv(struct sk_buff *skb, struct ieee80211_sta *sta,
 	if (!sta->he_cap.has_he)
 		goto after_he;
 
-	if (!(sta->mgd_flags & IEEE80211_STA_DISABLE_OFDMA)) {
+	if (vif->bss_conf.he_ofdma_disable ||
+	    !(sta->mgd_flags & IEEE80211_STA_DISABLE_OFDMA)) {
 		pr_info("STA: %pM  sta-muru-tlv, enabling OFDMA", sta->addr);
 
 		//muru->cfg.ofdma_ul_en = true;
@@ -1266,7 +1269,8 @@ mt7915_mcu_sta_bfer_he(struct ieee80211_sta *sta, struct ieee80211_vif *vif,
 	mt7915_mcu_sta_sounding_rate(bf);
 
 	/* TODO:  Ryder thinks this probably doesn't need to be disabled */
-	if (!(sta->mgd_flags & IEEE80211_STA_DISABLE_OFDMA)) {
+	if (vif->bss_conf.he_ofdma_disable ||
+	    !(sta->mgd_flags & IEEE80211_STA_DISABLE_OFDMA)) {
 		bf->trigger_su = HE_PHY(CAP6_TRIG_SU_BEAMFORMING_FB,
 					pe->phy_cap_info[6]);
 		bf->trigger_mu = HE_PHY(CAP6_TRIG_MU_BEAMFORMING_PARTIAL_BW_FB,
