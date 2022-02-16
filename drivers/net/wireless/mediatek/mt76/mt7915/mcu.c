@@ -985,8 +985,10 @@ mt7915_mcu_sta_muru_tlv(struct sk_buff *skb, struct ieee80211_sta *sta,
 	 * Without this patch, the firmware couldn't enable muru
 	 * if the first connected station is non-HE type.
 	 */
-	muru->cfg.mimo_ul_en = true;
-	muru->cfg.ofdma_dl_en = true;
+	if (!vif->bss_conf.he_ofdma_disable) {
+		muru->cfg.mimo_ul_en = true;
+		muru->cfg.ofdma_dl_en = true;
+	}
 
 	if (sta->vht_cap.vht_supported)
 		muru->mimo_dl.vht_mu_bfee =
@@ -996,7 +998,9 @@ mt7915_mcu_sta_muru_tlv(struct sk_buff *skb, struct ieee80211_sta *sta,
 		goto after_he;
 
 	if (vif->bss_conf.he_ofdma_disable ||
-	    !(sta->mgd_flags & IEEE80211_STA_DISABLE_OFDMA)) {
+	    (sta->mgd_flags & IEEE80211_STA_DISABLE_OFDMA)) {
+		pr_info("STA: %pM  sta-muru-tlv, NOT enabling OFDMA", sta->addr);
+	} else {
 		pr_info("STA: %pM  sta-muru-tlv, enabling OFDMA", sta->addr);
 
 		//muru->cfg.ofdma_ul_en = true;
@@ -1024,9 +1028,6 @@ mt7915_mcu_sta_muru_tlv(struct sk_buff *skb, struct ieee80211_sta *sta,
 			HE_MAC(CAP2_MU_CASCADING, elem->mac_cap_info[2]);
 		muru->ofdma_ul.uo_ra =
 			HE_MAC(CAP3_OFDMA_RA, elem->mac_cap_info[3]);
-	}
-	else {
-		pr_info("STA: %pM  sta-muru-tlv, NOT enabling OFDMA", sta->addr);
 	}
 
 after_he:
