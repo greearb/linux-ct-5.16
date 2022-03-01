@@ -181,7 +181,6 @@ struct mt7921_phy {
 
 	s16 coverage_class;
 	u8 slottime;
-	u8 is_monitor_mode; /* are we in monitor mode or not ? */
 
 	u32 rx_ampdu_ts;
 	u32 ampdu_ref;
@@ -487,4 +486,6 @@ void mt7921s_tx_complete_skb(struct mt76_dev *mdev, struct mt76_queue_entry *e);
 bool mt7921s_tx_status_data(struct mt76_dev *mdev, u8 *update);
 void mt7921_mac_add_txs(struct mt7921_dev *dev, void *data);
 void mt7921_set_runtime_pm(struct mt7921_dev *dev);
+int mt7921_mcu_set_sniffer(struct mt7921_dev *dev, struct ieee80211_vif *vif,
+			   bool enable);
 #endif

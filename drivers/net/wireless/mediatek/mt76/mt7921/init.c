@@ -117,7 +117,7 @@ mt7921_mac_init_band(struct mt7921_dev *dev, u8 band)
 	mt76_rmw_field(dev, MT_DMA_DCR0(band), MT_DMA_DCR0_MAX_RX_LEN, 1536);
 	/* disable rx rate report by default due to hw issues */
 	mt76_rmw_field(dev, MT_DMA_DCR0(band), MT_DMA_DCR0_RXD_G5_EN,
-		       dev->phy.is_monitor_mode || dev->rx_group_5_enable);
+		       dev->rx_group_5_enable);
 }
 
 int mt7921_mac_init(struct mt7921_dev *dev)

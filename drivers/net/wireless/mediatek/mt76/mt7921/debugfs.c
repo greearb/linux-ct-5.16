@@ -701,7 +701,7 @@ mt7921_rx_group_5_enable_set(void *data, u64 val)
 
 	/* Enabled if we requested enabled OR if monitor mode is enabled. */
 	mt76_rmw_field(dev, MT_DMA_DCR0(0), MT_DMA_DCR0_RXD_G5_EN,
-		       dev->phy.is_monitor_mode || dev->rx_group_5_enable);
+		       dev->rx_group_5_enable);
 	mt76_testmode_reset(dev->phy.mt76, true);
 
 	mutex_unlock(&dev->mt76.mutex);
