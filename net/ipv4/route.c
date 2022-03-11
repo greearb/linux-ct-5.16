@@ -2473,6 +2473,7 @@ int ip_route_input_rcu(struct sk_buff *skb, __be32 daddr, __be32 saddr,
 /* called with rcu_read_lock() */
 static struct rtable *__mkroute_output(const struct fib_result *res,
 				       const struct flowi4 *fl4, int orig_oif,
+				       struct net_device *orig_dev_out,
 				       struct net_device *dev_out,
 				       unsigned int flags)
 {
@@ -2514,12 +2515,26 @@ static struct rtable *__mkroute_output(const struct fib_result *res,
 			flags &= ~RTCF_LOCAL;
 		else
 			do_cache = false;
-		/* If multicast route do not exist use
-		 * default one, but do not gateway in this case.
+		/* If multicast route does not exist use
+		 * default one, but do not use gateway in this case.
 		 * Yes, it is hack.
 		 */
-		if (fi && res->prefixlen < 4)
+		if (fi && res->prefixlen < 4) {
+			struct net *net = dev_net(dev_out);
+
 			fi = NULL;
+
+			if (orig_oif && orig_dev_out &&
+			    dev_out->ifindex != orig_oif &&
+			    netif_index_is_l3_master(net, fl4->flowi4_oif)) {
+				/* vrf overwrites the original flowi4_oif for
+				 * member network devices.  In that case,
+				 * lets use the user-specified oif instead of
+				 * a default route.
+				 */
+				dev_out = orig_dev_out;
+			}
+		}
 	} else if ((type == RTN_LOCAL) && (orig_oif != 0) &&
 		   (orig_oif != dev_out->ifindex)) {
 		/* For local routes that require a particular output interface
@@ -2628,6 +2643,7 @@ struct rtable *ip_route_output_key_hash_rcu(struct net *net, struct flowi4 *fl4,
 					    const struct sk_buff *skb)
 {
 	struct net_device *dev_out = NULL;
+	struct net_device *orig_dev_out = NULL;
 	int orig_oif = fl4->flowi4_oif;
 	unsigned int flags = 0;
 	struct rtable *rth;
@@ -2783,12 +2799,13 @@ struct rtable *ip_route_output_key_hash_rcu(struct net *net, struct flowi4 *fl4,
 		goto make_route;
 	}
 
+	orig_dev_out = dev_out;
 	fib_select_path(net, res, fl4, skb);
 
 	dev_out = FIB_RES_DEV(*res);
 
 make_route:
-	rth = __mkroute_output(res, fl4, orig_oif, dev_out, flags);
+	rth = __mkroute_output(res, fl4, orig_oif, orig_dev_out, dev_out, flags);
 
 out:
 	return rth;
